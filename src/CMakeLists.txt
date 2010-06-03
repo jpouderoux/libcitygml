@@ -24,16 +24,13 @@ SET( LIBS ${XERCESC_LIBRARY} )
 INCLUDE_DIRECTORIES( ../include ${XERCESC_INCLUDE} ${GLU_INCLUDE_PATH} )
 
 SET( LIB_SRCS
-	CityGMLObjects.cpp
-	CityGMLParser.cpp
+	citymodel.cpp
+	parser.cpp
 )
 
 SET( LIB_PUBLIC_HEADERS
-	../include/CityGMLObjects.h
-	../include/CityGMLParser.h
-	../include/Vec2.h
-	../include/Vec3.h
-	../include/Vec4.h
+	../include/citygml.h
+	../include/vecs.h
 )
   
 ADD_LIBRARY( ${LIB_NAME} ${LIBCITYGML_USER_DEFINED_DYNAMIC_OR_STATIC} ${LIB_PUBLIC_HEADERS} ${LIB_SRCS} )

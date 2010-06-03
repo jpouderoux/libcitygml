@@ -1,8 +1,114 @@
-#ifndef _VEC3_H_
-#define _VEC3_H_
+#ifndef _VECS_H_
+#define _VECS_H_
 
+#include <sstream>
 #include <iostream>
 #include <math.h>
+
+// 2D vector class.
+
+template< class T > class TVec2
+{
+public:
+	union
+	{
+		T xy[2];
+		struct { T x, y; };
+	};
+
+public:
+	TVec2( const T x = (T)0, const T y = (T)0 );	
+	TVec2( const T vec[] );
+
+	TVec2 operator+( const TVec2<T>& v ) const;
+	TVec2 operator-( const TVec2<T>& v ) const;
+	TVec2 operator-() const;
+	TVec2 operator*( const T& v ) const;
+	TVec2 operator*( const TVec2<T>& v ) const;
+	TVec2 operator/( const T& v ) const;
+	TVec2 operator/( const TVec2<T>& v ) const;
+
+	bool operator==( const TVec2<T>& v ) const;
+	bool operator!=( const TVec2<T>& v ) const;
+
+	inline operator T*() { return xy; }
+	inline operator const T*() const { return xy; }
+};
+
+template< class T >	inline TVec2<T>::TVec2( const T x, const T y )
+{
+	this->x = x;
+	this->y = y;
+}
+
+template< class T >	inline TVec2<T>::TVec2( const T vec[] )
+{
+	memcpy( xy, vec, 2 * sizeof(T) ); 
+}
+
+template< class T >	inline TVec2<T> TVec2<T>::operator+( const TVec2<T>& v ) const
+{
+	return TVec2<T>( x + v.x, y + v.y );
+}
+
+template< class T >	inline TVec2<T> TVec2<T>::operator-( const TVec2<T>& v ) const
+{
+	return TVec2<T>( x - v.x, y - v.y );
+}	
+
+template< class T >	inline TVec2<T> TVec2<T>::operator-() const
+{
+	return TVec2<T>( -x, -y );
+}	
+
+template< class T >	inline TVec2<T> TVec2<T>::operator*( const T& v ) const
+{
+	return TVec2<T>( x * v, y * v );
+}	
+
+template< class T >	inline TVec2<T> TVec2<T>::operator*( const TVec2<T>& v ) const
+{
+	return TVec2<T>( x * v.x, y * v.y );
+}
+
+template< class T >	inline TVec2<T> TVec2<T>::operator/( const T& v ) const
+{
+	return TVec2<T>( x / v, y / v );
+}	
+
+template< class T >	inline TVec2<T> TVec2<T>::operator/( const TVec2<T>& v ) const
+{
+	return TVec2<T>( x / v.x, y / v.y );
+}	
+
+template< class T >	inline bool TVec2<T>::operator==( const TVec2<T>& v ) const
+{
+	return x == v.x && y == v.y; 
+}	
+
+template< class T >	inline bool TVec2<T>::operator!=( const TVec2<T>& v ) const
+{
+	return x != v.x || y != v.y;
+}
+
+template< class T >	inline TVec2<T> operator*( const T& val, const TVec2<T>& vec )
+{
+	return TVec2<T>( vec.x * val, vec.y * val );
+}	
+
+template<class T> inline std::ostream& operator<<(std::ostream & os, TVec2<T> const & v)
+{
+	return os << std::fixed << v.x << " " << std::fixed << v.y;
+}
+
+template<class T> inline std::istream& operator>>(std::istream & is, TVec2<T> & v)
+{
+	return is >> v.x >> v.y;
+}
+
+typedef TVec2< float >			TVec2f;
+typedef TVec2< double >			TVec2d;
+
 
 // 3D vector class.
 
@@ -179,5 +285,46 @@ template<class T> inline std::istream& operator>>(std::istream & is, TVec3<T> & 
 
 typedef TVec3< float >			TVec3f;
 typedef TVec3< double >			TVec3d;
+
+
+// 4D vector class.
+
+template< class T > class TVec4
+{
+public:
+	union
+	{
+		T xyzw[4];
+		T rgba[4];
+		struct { T x, y, z, w; };
+		struct { T r, g, b, a; };
+	};
+
+public:
+	TVec4( const T x = (T)0, const T y = (T)0, const T z = (T)0, const T w = (T)0 )
+	{
+		this->x = x;
+		this->y = y;
+		this->z = z;
+		this->w = w;
+	}
+	
+	TVec4( const T vec[], const T w = (T)0 ) { memcpy( xyzw, vec, 4 * sizeof(T) ); this->w = w; }
+
+	TVec4( const T vec[] ) { memcpy( xyzw, vec, 4 * sizeof(T) ); }
+};
+
+template<class T> inline std::ostream& operator<<( std::ostream & os, TVec4<T> const & v )
+{
+	return os << std::fixed << v.x << " " << std::fixed << v.y << " " << std::fixed << v.z << " " << std::fixed << v.w;
+}
+
+template<class T> inline std::istream& operator>>( std::istream & is, TVec4<T> & v )
+{
+	return is >> v.x >> v.y >> v.z >>  v.w;
+}
+
+typedef TVec4< float >			TVec4f;
+typedef TVec4< double >			TVec4d;
 
 #endif

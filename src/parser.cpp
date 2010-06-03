@@ -19,11 +19,13 @@
 //  http://www.citygml.org/citygml/1/0/0/CityGML.xsd
 //  http://www.citygml.org/fileadmin/citygml/docs/CityGML_1_0_0_UML_diagrams.pdf
 
-#include "CityGMLParser.h"
+#include "citygml.h"
 
 #include <xercesc/util/XMLString.hpp>
 #include <xercesc/parsers/SAXParser.hpp>
 #include <xercesc/sax/HandlerBase.hpp>
+#include <xercesc/sax/InputSource.hpp>
+#include <xercesc/util/BinInputStream.hpp>
 
 #include <algorithm>
 #include <stack>
@@ -290,7 +292,7 @@ namespace citygml
 
 	CityGMLHandler::CityGMLHandler( const std::string& fileName, CityObjectsTypeMask objectsMask, unsigned int minLOD, unsigned int maxLOD, bool pruneEmptyObjects, bool triangulate ) 
 		:_fileName( fileName ), _triangulate( triangulate ), _model( NULL ), _currentCityObject( NULL ), 
-		_currentGeometry( NULL ), _currentPolygon( NULL ), _currentRing( NULL ), 
+		_currentGeometry( NULL ), _currentPolygon( NULL ), _currentRing( NULL ),  _currentGeometryType( GT_Unknown ),
 		_currentAppearance( NULL ), _objectsMask( objectsMask ), _minLOD( minLOD ), _maxLOD( maxLOD ), _currentLOD( minLOD ), 
 		_pruneEmptyObjects( pruneEmptyObjects ), _filterNodeType( false ), _filterDepth( 0 ), _exterior( true )
 	{ 
@@ -890,6 +892,42 @@ namespace citygml
 
 	///////////////////////////////////////////////////////////////////////////////
 
+	class StdBinInputStream : public XERCES_CPP_NAMESPACE::BinInputStream
+	{
+	public:
+		StdBinInputStream( std::istream& stream ) : BinInputStream(), m_stream( stream ) {}
+
+		virtual ~StdBinInputStream( void ) {}
+
+		virtual XMLFilePos curPos( void ) const { return m_stream.tellg(); }
+
+		virtual XMLSize_t readBytes( XMLByte* const buf, const XMLSize_t maxToRead )
+		{
+			assert( sizeof(XMLByte) == sizeof(char) );
+			if ( !m_stream ) return 0;
+			m_stream.read( reinterpret_cast<char*>(buf), maxToRead );
+			return m_stream.gcount();
+		}
+
+		virtual const XMLCh* getContentType() const { return NULL; }
+
+	private:
+		std::istream& m_stream;
+	};
+
+	class StdBinInputSource : public XERCES_CPP_NAMESPACE::InputSource
+	{
+	public:
+		StdBinInputSource( std::istream& stream ) : m_stream( stream ) {}
+
+		virtual XERCES_CPP_NAMESPACE::BinInputStream* makeStream() const 
+		{
+			return new StdBinInputStream( m_stream );
+		}
+	private:
+		std::istream& m_stream;
+	};
+
 	CityModel* load( const std::string& fname, CityObjectsTypeMask objectsMask, unsigned int minLOD, unsigned int maxLOD, bool pruneEmptyObjects, bool triangulate )
 	{
 		try 
@@ -936,4 +974,53 @@ namespace citygml
 		delete handler;
 		return model;
 	}
+
+	CityModel* load( std::istream& stream, CityObjectsTypeMask objectsMask, unsigned int minLOD, unsigned int maxLOD, bool pruneEmptyObjects, bool triangulate )
+	{
+		try 
+		{
+			xercesc::XMLPlatformUtils::Initialize();
+		}
+		catch ( const xercesc::XMLException& e ) 
+		{
+			std::cerr << "CityGML: XML Exception occures during initialization!" << std::endl << wstos( e.getMessage() ) << std::endl;
+			return false;
+		}
+
+		CityGMLHandler* handler = new CityGMLHandler( "<<stream>>", objectsMask, minLOD, maxLOD, pruneEmptyObjects, triangulate );
+
+		xercesc::SAXParser* parser = new xercesc::SAXParser();
+		parser->setDoNamespaces( false );    	
+		parser->setDocumentHandler( handler );
+		parser->setErrorHandler( handler );
+
+		CityModel* model = NULL;
+
+		try 
+		{
+			StdBinInputSource input( stream );			
+			parser->parse( input );
+			model = handler->getModel();
+		}
+		catch ( const xercesc::XMLException& e ) 
+		{
+			std::cerr << "CityGML: XML Exception occures!" << std::endl << wstos( e.getMessage() ) << std::endl;
+			delete handler->getModel();
+		}
+		catch ( const xercesc::SAXParseException& e ) 
+		{
+			std::cerr << "CityGML: SAXParser Exception occures!" << std::endl << wstos( e.getMessage() ) << std::endl;
+			delete handler->getModel();
+		}
+		catch ( ... ) 
+		{
+			std::cerr << "CityGML: Unexpected Exception occures!" << std::endl ;
+			delete handler->getModel();
+		}
+		
+		delete parser;
+		delete handler;
+		return model;
+	}
 }
+
