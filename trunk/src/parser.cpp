@@ -29,6 +29,7 @@
 
 #include <algorithm>
 #include <stack>
+#include <fstream>
 
 namespace citygml
 {
@@ -152,7 +153,7 @@ namespace citygml
 	{
 	public:
 
-		CityGMLHandler( const std::string& fileName, CityObjectsTypeMask objectsMask = COT_All, unsigned int minLOD = 1, unsigned int maxLOD = 4, bool pruneEmptyObjects = true, bool triangulate = true );
+		CityGMLHandler( CityObjectsTypeMask objectsMask = COT_All, unsigned int minLOD = 0, unsigned int maxLOD = 4, bool pruneEmptyObjects = true, bool tesselate = true );
 
 		~CityGMLHandler( void );
 
@@ -242,9 +243,7 @@ namespace citygml
 
 		std::stringstream _buff;
 
-		std::string _fileName;
-
-		bool _triangulate;
+		bool _tesselate;
 	
 		CityModel* _model;
 
@@ -263,7 +262,7 @@ namespace citygml
 
 		unsigned int _minLOD;
 		unsigned int _maxLOD;
-		unsigned int _currentLOD;
+		int _currentLOD;
 
 		bool _pruneEmptyObjects;
 
@@ -290,8 +289,8 @@ namespace citygml
 	std::map<std::string, CityGMLNodeType> CityGMLHandler::s_cityGMLNodeTypeMap;
 	std::vector< std::string > CityGMLHandler::s_knownNamespace;
 
-	CityGMLHandler::CityGMLHandler( const std::string& fileName, CityObjectsTypeMask objectsMask, unsigned int minLOD, unsigned int maxLOD, bool pruneEmptyObjects, bool triangulate ) 
-		:_fileName( fileName ), _triangulate( triangulate ), _model( NULL ), _currentCityObject( NULL ), 
+	CityGMLHandler::CityGMLHandler( CityObjectsTypeMask objectsMask, unsigned int minLOD, unsigned int maxLOD, bool pruneEmptyObjects, bool tesselate ) 
+		: _tesselate( tesselate ), _model( NULL ), _currentCityObject( NULL ), 
 		_currentGeometry( NULL ), _currentPolygon( NULL ), _currentRing( NULL ),  _currentGeometryType( GT_Unknown ),
 		_currentAppearance( NULL ), _objectsMask( objectsMask ), _minLOD( minLOD ), _maxLOD( maxLOD ), _currentLOD( minLOD ), 
 		_pruneEmptyObjects( pruneEmptyObjects ), _filterNodeType( false ), _filterDepth( 0 ), _exterior( true )
@@ -535,7 +534,7 @@ namespace citygml
 		// get the LOD level if node name starts with 'lod'
 		if ( localname.length() > 3 && localname.find( "lod" ) == 0 ) _currentLOD = localname[3] - '0';
 
-#define LOD_FILTER() if ( _currentLOD < _minLOD || _currentLOD > _maxLOD ) break;
+#define LOD_FILTER() if ( _currentLOD < (int)_minLOD || _currentLOD > (int)_maxLOD ) break;
 
 #define NODETYPE_FILTER() ( _filterNodeType && getPathDepth() > _filterDepth )
 
@@ -546,7 +545,7 @@ namespace citygml
 		switch ( nodeType ) 
 		{
 			case NODETYPE( CityModel ):
-			_model = new CityModel( _fileName );
+			_model = new CityModel();
 			break;
 
 			// City objects management
@@ -783,7 +782,7 @@ namespace citygml
 	case NODETYPE( Polygon ):
 		if ( _currentGeometry && _currentPolygon )
 		{
-			_currentPolygon->finish( ( nodeType == NODETYPE( Triangle ) ) ? false : _triangulate );							
+			_currentPolygon->finish( ( nodeType == NODETYPE( Triangle ) ) ? false : _tesselate );							
 			_currentGeometry->addPolygon( _currentPolygon );
 		}
 		_currentPolygon = NULL;
@@ -928,7 +927,9 @@ namespace citygml
 		std::istream& m_stream;
 	};
 
-	CityModel* load( const std::string& fname, CityObjectsTypeMask objectsMask, unsigned int minLOD, unsigned int maxLOD, bool pruneEmptyObjects, bool triangulate )
+	// Parsing methods
+
+	CityModel* load( std::istream& stream, CityObjectsTypeMask objectsMask, unsigned int minLOD, unsigned int maxLOD, bool pruneEmptyObjects, bool tessalate )
 	{
 		try 
 		{
@@ -940,54 +941,7 @@ namespace citygml
 			return false;
 		}
 
-		CityGMLHandler* handler = new CityGMLHandler( fname, objectsMask, minLOD, maxLOD, pruneEmptyObjects, triangulate );
-
-		xercesc::SAXParser* parser = new xercesc::SAXParser();
-		parser->setDoNamespaces( false );    	
-		parser->setDocumentHandler( handler );
-		parser->setErrorHandler( handler );
-
-		CityModel* model = NULL;
-
-		try 
-		{
-			parser->parse( fname.c_str() );
-			model = handler->getModel();
-		}
-		catch ( const xercesc::XMLException& e ) 
-		{
-			std::cerr << "CityGML: XML Exception occures!" << std::endl << wstos( e.getMessage() ) << std::endl;
-			delete handler->getModel();
-		}
-		catch ( const xercesc::SAXParseException& e ) 
-		{
-			std::cerr << "CityGML: SAXParser Exception occures!" << std::endl << wstos( e.getMessage() ) << std::endl;
-			delete handler->getModel();
-		}
-		catch ( ... ) 
-		{
-			std::cerr << "CityGML: Unexpected Exception occures!" << std::endl ;
-			delete handler->getModel();
-		}
-		
-		delete parser;
-		delete handler;
-		return model;
-	}
-
-	CityModel* load( std::istream& stream, CityObjectsTypeMask objectsMask, unsigned int minLOD, unsigned int maxLOD, bool pruneEmptyObjects, bool triangulate )
-	{
-		try 
-		{
-			xercesc::XMLPlatformUtils::Initialize();
-		}
-		catch ( const xercesc::XMLException& e ) 
-		{
-			std::cerr << "CityGML: XML Exception occures during initialization!" << std::endl << wstos( e.getMessage() ) << std::endl;
-			return false;
-		}
-
-		CityGMLHandler* handler = new CityGMLHandler( "<<stream>>", objectsMask, minLOD, maxLOD, pruneEmptyObjects, triangulate );
+		CityGMLHandler* handler = new CityGMLHandler( objectsMask, minLOD, maxLOD, pruneEmptyObjects, tessalate );
 
 		xercesc::SAXParser* parser = new xercesc::SAXParser();
 		parser->setDoNamespaces( false );    	
@@ -1020,6 +974,16 @@ namespace citygml
 		
 		delete parser;
 		delete handler;
+		return model;
+	}
+
+	CityModel* load( const std::string& fname, CityObjectsTypeMask objectsMask, unsigned int minLOD, unsigned int maxLOD, bool pruneEmptyObjects, bool tessalate )
+	{
+		std::ifstream file;
+		file.open( fname.c_str(), std::ifstream::in );
+		if ( file.fail() ) { std::cerr << "CityGML: Unable to open file " << fname << "!" << std::endl; return NULL; }
+		CityModel* model = load( file, objectsMask, minLOD, maxLOD, pruneEmptyObjects, tessalate );
+		file.close();
 		return model;
 	}
 }

@@ -138,7 +138,7 @@ namespace citygml
 		if ( _negNormal || _normal.z < -0.5 ) _normal = -_normal;
 	}
 
-	void Polygon::triangulate( void )
+	void Polygon::tesselate( void )
 	{
 		delete _indices;
 		_indices = NULL;
@@ -304,10 +304,10 @@ namespace citygml
 		delete [] _indices; 
 	}
 
-	void Polygon::finish( bool doTriangulate ) 
+	void Polygon::finish( bool doTesselate ) 
 	{
 		computeNormal();
-		if ( doTriangulate ) triangulate();							
+		if ( doTesselate ) tesselate();							
 		else mergeRings();
 	}
 
