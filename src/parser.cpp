@@ -891,7 +891,7 @@ namespace citygml
 
 	///////////////////////////////////////////////////////////////////////////////
 
-	class StdBinInputStream : public XERCES_CPP_NAMESPACE::BinInputStream
+	class StdBinInputStream : public xercesc::BinInputStream
 	{
 	public:
 		StdBinInputStream( std::istream& stream ) : BinInputStream(), m_stream( stream ) {}
@@ -914,12 +914,12 @@ namespace citygml
 		std::istream& m_stream;
 	};
 
-	class StdBinInputSource : public XERCES_CPP_NAMESPACE::InputSource
+	class StdBinInputSource : public xercesc::InputSource
 	{
 	public:
 		StdBinInputSource( std::istream& stream ) : m_stream( stream ) {}
 
-		virtual XERCES_CPP_NAMESPACE::BinInputStream* makeStream() const 
+		virtual xercesc::BinInputStream* makeStream() const 
 		{
 			return new StdBinInputStream( m_stream );
 		}
