@@ -14,7 +14,7 @@ int main( int argc, char **argv )
 
 	bool log = ( argc > 2 && !strcmp( argv[1], "-log" ) );
 
-	std::cout << "Parsing CityGML file " << argv[1] << "..." << std::endl;
+	std::cout << "Parsing CityGML file " << argv[1] << " using libcitygml v." << LIBCITYGML_VERSIONSTR << "..." << std::endl;
 
 	time_t start;
 	time( &start );

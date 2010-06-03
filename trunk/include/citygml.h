@@ -23,6 +23,12 @@
 #include <sstream>
 #include <map>
 
+#define LIBCITYGML_VERSION_MAJOR 0
+#define LIBCITYGML_VERSION_MINOR 1
+
+#define MAKE_VERSION(a, b) #a "." #b
+#define LIBCITYGML_VERSIONSTR MAKE_VERSION(LIBCITYGML_VERSION_MAJOR, LIBCITYGML_VERSION_MINOR)
+
 #if defined( _MSC_VER ) && defined( LIBCITYGML_DYNAMIC )
 #	ifdef LIBCITYGML_BUILD
 #		define LIBCITYGML_EXPORT __declspec( dllexport )
