@@ -98,6 +98,11 @@ IF   (LIBCITYGML_TESTS)
 	ADD_SUBDIRECTORY( test )
 ENDIF(LIBCITYGML_TESTS)
 
+OPTION(LIBCITYGML_VRML "Set to ON to build citygml2vrml program." ON)
+IF   (LIBCITYGML_VRML)
+	ADD_SUBDIRECTORY( test/citygml2vrml )
+ENDIF(LIBCITYGML_VRML)
+
 #-----------------------------------------------------------------------------
 ### uninstall target
 #-----------------------------------------------------------------------------
