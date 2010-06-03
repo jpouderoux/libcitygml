@@ -16,13 +16,12 @@
 
 #ifndef __CITYGML_H__
 #define __CITYGML_H__
+
 #include <iostream>
 #include <string>
 #include <vector>
 #include <sstream>
 #include <map>
-
-#include "vecs.h"
 
 #if defined( _MSC_VER ) && defined( LIBCITYGML_DYNAMIC )
 #	ifdef LIBCITYGML_BUILD
@@ -39,6 +38,8 @@
 	typedef elk::Vec3f TVec3f;
 	typedef elk::Vec2f TVec2f;
 	typedef elk::Vec4f TVec4f;
+#else
+#	include "vecs.h"
 #endif
 
 
@@ -70,13 +71,13 @@ namespace citygml
 	///////////////////////////////////////////////////////////////////////////////
 	// Parsing routines
 
-	LIBCITYGML_EXPORT CityModel* load( const std::string& fileName, CityObjectsTypeMask objectsMask = COT_All, 
-		unsigned int minLOD = 1, unsigned int maxLOD = 4, 
-		bool pruneEmptyObjects = true, bool triangulate = true );
-
 	LIBCITYGML_EXPORT CityModel* load( std::istream& stream, CityObjectsTypeMask objectsMask = COT_All, 
-		unsigned int minLOD = 1, unsigned int maxLOD = 4, 
-		bool pruneEmptyObjects = true, bool triangulate = true );
+		unsigned int minLOD = 0, unsigned int maxLOD = 4, 
+		bool pruneEmptyObjects = true, bool tesselate = true );
+
+	LIBCITYGML_EXPORT CityModel* load( const std::string& fileName, CityObjectsTypeMask objectsMask = COT_All, 
+		unsigned int minLOD = 0, unsigned int maxLOD = 4, 
+		bool pruneEmptyObjects = true, bool tesselate = true );
 
 	///////////////////////////////////////////////////////////////////////////////
 
@@ -101,7 +102,7 @@ namespace citygml
 	};
 
 	///////////////////////////////////////////////////////////////////////////////
-	// Base object with associated with an unique id and a set of properties (key-value pairs)
+	// Base object associated with an unique id and a set of properties (key-value pairs)
 	class Object 
 	{
 		friend class CityGMLHandler;
@@ -302,7 +303,7 @@ namespace citygml
 
 		void addRing( LinearRing* );
 
-		void triangulate( void );
+		void tesselate( void );
 		void mergeRings( void );
 		void clearRings( void );
 
