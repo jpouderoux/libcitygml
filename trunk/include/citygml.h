@@ -14,17 +14,15 @@
  * GNU Lesser General Public License for more details.
 */
 
-#ifndef __CITYGMLOBJECTS_H__
-#define __CITYGMLOBJECTS_H__
+#ifndef __CITYGML_H__
+#define __CITYGML_H__
 #include <iostream>
 #include <string>
 #include <vector>
 #include <sstream>
 #include <map>
 
-#include "Vec2.h"
-#include "Vec3.h"
-#include "Vec4.h"
+#include "vecs.h"
 
 #if defined( _MSC_VER ) && defined( LIBCITYGML_DYNAMIC )
 #	ifdef LIBCITYGML_BUILD
@@ -37,15 +35,49 @@
 #endif
 
 #ifdef USE_ELKANO_TYPES
-typedef elk::Vec3d TVec3d;
-typedef elk::Vec3f TVec3f;
-typedef elk::Vec2f TVec2f;
-typedef elk::Vec4f TVec4f;
+	typedef elk::Vec3d TVec3d;
+	typedef elk::Vec3f TVec3f;
+	typedef elk::Vec2f TVec2f;
+	typedef elk::Vec4f TVec4f;
 #endif
 
 
 namespace citygml 
 {
+	class CityModel;
+
+	typedef enum {
+		COT_GenericCityObject			= 1 << 0,
+		COT_Building					= 1 << 1,
+		COT_Room						= 1 << 2,
+		COT_BuildingInstallation		= 1 << 3,
+		COT_BuildingFurniture			= 1 << 4,
+		COT_CityFurniture				= 1 << 5,
+		COT_Track						= 1 << 6,
+		COT_Road						= 1 << 7,
+		COT_Railway						= 1 << 8,
+		COT_Square						= 1 << 9,
+		COT_PlantCover					= 1 << 10,
+		COT_SolitaryVegetationObject	= 1 << 11,
+		COT_WaterBody					= 1 << 12,
+		COT_TINRelief					= 1 << 13,
+		COT_LandUse						= 1 << 14,
+		COT_All							= 0xFFFFFF
+	} CityObjectsType;
+
+	typedef unsigned int CityObjectsTypeMask;
+
+	///////////////////////////////////////////////////////////////////////////////
+	// Parsing routines
+
+	LIBCITYGML_EXPORT CityModel* load( const std::string& fileName, CityObjectsTypeMask objectsMask = COT_All, 
+		unsigned int minLOD = 1, unsigned int maxLOD = 4, 
+		bool pruneEmptyObjects = true, bool triangulate = true );
+
+	LIBCITYGML_EXPORT CityModel* load( std::istream& stream, CityObjectsTypeMask objectsMask = COT_All, 
+		unsigned int minLOD = 1, unsigned int maxLOD = 4, 
+		bool pruneEmptyObjects = true, bool triangulate = true );
+
 	///////////////////////////////////////////////////////////////////////////////
 
 	class Envelope
@@ -343,27 +375,6 @@ namespace citygml
 
 	///////////////////////////////////////////////////////////////////////////////
 
-	typedef enum {
-		COT_GenericCityObject			= 1 << 0,
-		COT_Building					= 1 << 1,
-		COT_Room						= 1 << 2,
-		COT_BuildingInstallation		= 1 << 3,
-		COT_BuildingFurniture			= 1 << 4,
-		COT_CityFurniture				= 1 << 5,
-		COT_Track						= 1 << 6,
-		COT_Road						= 1 << 7,
-		COT_Railway						= 1 << 8,
-		COT_Square						= 1 << 9,
-		COT_PlantCover					= 1 << 10,
-		COT_SolitaryVegetationObject	= 1 << 11,
-		COT_WaterBody					= 1 << 12,
-		COT_TINRelief					= 1 << 13,
-		COT_LandUse						= 1 << 14,
-		COT_All							= 0xFFFFFF
-	} CityObjectsType;
-
-	typedef unsigned int CityObjectsTypeMask;
-	
 	std::string getCityObjectsClassName( CityObjectsTypeMask mask );
 
 	class CityObject : public Object 
@@ -641,4 +652,4 @@ namespace citygml
 	std::ostream& operator<<( std::ostream&, const citygml::CityModel & );
 }
 
-#endif // __CITYGMLOBJECTS_H__
+#endif // __CITYGML_H__

@@ -1,5 +1,5 @@
 #include <iostream>
-#include "CityGMLParser.h"
+#include "citygml.h"
 
 
 int main( int argc, char **argv )

@@ -20,7 +20,7 @@
 #	define CALLBACK
 #endif
 #include "GL/glu.h"
-#include "CityGMLObjects.h"
+#include "citygml.h"
 
 
 ///////////////////////////////////////////////////////////////////////////////

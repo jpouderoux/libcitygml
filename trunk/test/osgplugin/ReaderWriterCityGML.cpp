@@ -30,7 +30,7 @@
 #include <osgDB/FileUtils>
 #include <osgDB/FileNameUtils>
 
-#include "CityGMLParser.h"
+#include "citygml.h"
 
 #include <algorithm>
 #include <cctype> 
