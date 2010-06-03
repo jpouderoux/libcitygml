@@ -16,10 +16,10 @@ int main( int argc, char **argv )
 
 	std::cout << "Parsing CityGML file " << argv[1] << "..." << std::endl;
 
-	 time_t start;
-	 time( &start );
-//#define USE_STREAM
-#ifdef USE_STREAM
+	time_t start;
+	time( &start );
+
+#if 0
 	std::ifstream file;
 	file.open( argv[1], std::ifstream::in );
 	citygml::CityModel *city = citygml::load( file, citygml::COT_All );
@@ -37,7 +37,7 @@ int main( int argc, char **argv )
 	std::cout << city->size() << " city objects read." << std::endl;
 
 	std::cout << "Analyzing the city objects..." << std::endl;
-	
+
 	const citygml::CityObjectsMap& cityObjectsMap = city->getCityObjectsMap();
 
 	citygml::CityObjectsMap::const_iterator it = cityObjectsMap.begin();
@@ -61,6 +61,6 @@ int main( int argc, char **argv )
 	}
 
 	std::cout << "Done." << std::endl;
-	
+
 	return 0;
 }
