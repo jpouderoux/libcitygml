@@ -73,15 +73,16 @@ private:
 
 int main( int argc, char **argv )
 {
-	std::cout << "citygml2vrml v.0.1" << std::endl << "(c) 2010 Joachim Pouderoux, BRGM" << std::endl;
+	std::cout << "citygml2vrml v.0.1 (c) 2010 Joachim Pouderoux, BRGM" << std::endl;
 
 	if ( argc < 3 ) 
 	{
-		std::cout << "This program converts CityGML files to a VRML97 representation" << std::endl;
-		std::cout << "Usage: citygml2vrml <inputfile.gml> <outputfile.wrl>" << std::endl; 
+		std::cout << std::endl << "This program converts CityGML files to a VRML97 representation" << std::endl;
+		std::cout << "More info & updates on http://code.google.com/p/libcitygml" << std::endl;
+		std::cout << "Version built on " << __DATE__ << " at " << __TIME__ << std::endl << std::endl;
+		std::cout << "\tUsage: citygml2vrml <inputfile.gml> <outputfile.wrl>" << std::endl; 
 		return -1;
 	}
-
 
 	std::cout << "Parsing CityGML file " << argv[1] << "..." << std::endl;
 
@@ -268,7 +269,7 @@ void VRML97Converter::dumpPolygon( const citygml::CityObject* object, const city
 		if ( const citygml::Texture* t = dynamic_cast<const citygml::Texture*>( mat ) ) 
 		{
 			beginAttributeNode( "texture", "ImageTexture" );
-			addAttributeValue( "url", t->getUrl() );
+			addAttributeValue( "url", "\"" + t->getUrl() + "\"" );
 			endNode();
 			colorset = true;
 		}
