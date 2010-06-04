@@ -30,9 +30,11 @@ public:
 
 private:
 
-	void createCityObject( citygml::CityObject* object );
+	void dumpCityObject( const citygml::CityObject* );
 
-private:
+	void dumpGeometry( const citygml::CityObject*, const citygml::Geometry* );
+
+	void dumpPolygon( const citygml::CityObject*, const citygml::Geometry*, const citygml::Polygon* );
 
 	// VRML97 Helpers
 
@@ -46,7 +48,7 @@ private:
 
 	inline void addAttribute( const std::string &attr ) { printIndent(); _out << attr << " "; }
 
-	template<class T> inline void addAttributeValue( const std::string &attr, T &val ) { printIndent(); _out << attr << " " << val << std::endl; }
+	//template<class T> inline void addAttributeValue( const std::string &attr, T &val ) { printIndent(); _out << attr << " " << val << std::endl; }
 
 	template<class T> inline void addAttributeValue( const std::string &attr, T val ) { printIndent(); _out << attr << " " << val << std::endl; }
 
@@ -80,6 +82,7 @@ int main( int argc, char **argv )
 		return -1;
 	}
 
+
 	std::cout << "Parsing CityGML file " << argv[1] << "..." << std::endl;
 
 	time_t start;
@@ -92,9 +95,8 @@ int main( int argc, char **argv )
 
 	if ( !city ) return NULL;
 
-	std::cout << "Done in " << difftime( end, start ) << " seconds." << std::endl; 
+	std::cout << "Done in " << difftime( end, start ) << " seconds." << std::endl << city->size() << " city objects read." << std::endl;
 
-	std::cout << city->size() << " city objects read." << std::endl;
 
 	std::cout << "Converting the city objects to VRML97..." << std::endl;
 
@@ -134,7 +136,7 @@ bool VRML97Converter::convert( const std::string& outFilename )
 		addComment( citygml::getCityObjectsClassName( it->first ) );
 		beginGroup();
 
-		for ( unsigned int i = 0; i < v.size(); i++ ) createCityObject( v[i] );
+		for ( unsigned int i = 0; i < v.size(); i++ ) dumpCityObject( v[i] );
 
 		endGroup();
 		break;
@@ -145,132 +147,150 @@ bool VRML97Converter::convert( const std::string& outFilename )
 	return true;
 }
 
-// VRML97 object converter
-
-void VRML97Converter::createCityObject( citygml::CityObject* object ) 
+void VRML97Converter::dumpCityObject( const citygml::CityObject* object ) 
 {
-	if ( object->size() == 0 ) return;
-
-	beginGroup();
+	if ( !object || object->size() == 0 ) return;
 
 	addComment( object->getId() );
 
-	//std::cout << "Creating object " << object->getId() << std::endl;
+	beginGroup();	
 
-	for ( unsigned int i = 0; i < object->size(); i++ ) 
-	{
-		const citygml::Geometry& geometry = *object->getGeometry( i );
-
-		for ( unsigned int j = 0; j < geometry.size(); j++ ) 
-		{
-			const citygml::Polygon* p = geometry[j];
-			if ( !p || !p->getIndices() || p->getIndicesSize() == 0 ) continue;
-
-			addNode( "Shape" );
-
-			// Geometry management
-
-			addAttributeNode( "geometry", "IndexedFaceSet" );
-
-			{
-				addAttributeNode( "coord", "Coordinate" );
-
-				addAttributeArray( "point" );
-				printIndent();
-				for ( unsigned int k = 0; k < p->size(); k++ ) _out << (*p)[k] << ", ";
-				_out << std::endl;
-				endAttributeArray();
-
-				endNode();
-			}
-
-			if ( p->getIndices() )
-			{
-				addAttributeArray( "coordIndex" );
-				printIndent();
-				unsigned int* indices = p->getIndices();
-				for ( unsigned int k = 0 ; k < p->getIndicesSize() / 3; k++ )
-					_out << indices[ k * 3 + 0 ] << " " << indices[ k * 3 + 1 ] << " " << indices[ k * 3 + 2 ] << ", ";
-				_out << std::endl;
-				endAttributeArray();
-			}
-
-			// Normal management
-
-			if ( p->getNormal() )
-			{
-				addAttributeNode( "normal", "Normal" );
-
-				addAttributeArray( "vector" );
-				printIndent();
-				_out << p->getNormal() << std::endl;
-				endAttributeArray();
-
-				endNode();
-			}
-
-			addAttributeValue( "normalPerVertex", "FALSE" );
-
-			// Texture coordinates
-
-			const citygml::TexCoords *texCoords = p->getTexCoords();
-
-			if ( texCoords )
-			{
-				addAttributeNode( "texCoord", "TextureCoordinate" );
-
-				addAttributeArray( "point" );
-				printIndent();
-				for ( unsigned int k = 0; k < p->size(); k++ ) _out << (*texCoords)[k] << ", ";
-				_out << std::endl;
-				endAttributeArray();
-
-				endNode();
-			}
-
-			endNode();
-
-			// Material management
-
-			const citygml::Appearance *mat = p->getAppearance();
-
-			bool colorset = false;
-
-			if ( mat )
-			{
-				addAttributeNode( "appearance", "Appearance" );
-
-				if ( const citygml::Material* m = dynamic_cast<const citygml::Material*>( mat ) )
-				{
-					addAttributeNode( "material", "Material" );
-
-					addAttributeValue( "diffuseColor", m->getDiffuse() );
-					addAttributeValue( "ambientIntensity", m->getAmbientIntensity() );
-					addAttributeValue( "specularColor", m->getSpecular() );
-					addAttributeValue( "emissiveColor", m->getEmissive() );
-					addAttributeValue( "shininess", m->getShininess() );
-					addAttributeValue( "transparency", m->getTransparency() );
-
-					endNode();
-				}
-				else if ( const citygml::Texture* t = dynamic_cast<const citygml::Texture*>( mat ) ) 
-				{
-
-					addAttributeNode( "texture", "ImageTexture" );
-					addAttributeValue( "url", t->getUrl() );
-					endNode();
-
-				}
-				endNode();
-			}
-
-			// That's it!		
-			endNode();
-
-			//break;
-		}
-		//break;
-	}
+	for ( unsigned int i = 0; i < object->size(); i++ ) dumpGeometry( object, object->getGeometry( i ) );
 
 	endGroup();
+}
+
+void VRML97Converter::dumpGeometry( const citygml::CityObject* object, const citygml::Geometry* g )
+{
+	if ( !g ) return;
+
+	addComment( "Geometry: " + g->getId() );
+
+	for ( unsigned int i = 0; i < g->size(); i++ ) dumpPolygon( object, g, (*g)[i] );
+}
+
+void VRML97Converter::dumpPolygon( const citygml::CityObject* object, const citygml::Geometry* g, const citygml::Polygon* p )
+{
+	if ( !p || !p->getIndices() || p->getIndicesSize() == 0 ) return;
+
+	unsigned int* indices = p->getIndices();
+	std::stringstream ss;
+	ss << "  " << p->size() << " points & " << p->getIndicesSize() << " triangles";
+	addComment( "Polygon: " + p->getId() + ss.str() );
+
+	addNode( "Shape" );
+
+	// Geometry management
+
+	addAttributeNode( "geometry", "IndexedFaceSet" );
+
+	{
+		addAttributeNode( "coord", "Coordinate" );
+
+		addAttributeArray( "point" );
+		printIndent();
+		for ( unsigned int k = 0; k < p->size(); k++ ) _out << (*p)[k] << ", ";
+		_out << std::endl;
+		endAttributeArray();
+
+		endNode();
+	}
+
+	if ( p->getIndices() )
+	{
+		addAttributeArray( "coordIndex" );
+		printIndent();
+		for ( unsigned int k = 0 ; k < p->getIndicesSize() / 3; k++ )
+			_out << indices[ k * 3 + 0 ] << " " << indices[ k * 3 + 1 ] << " " << indices[ k * 3 + 2 ] << " -1, ";
+		_out << std::endl;
+		endAttributeArray();
+	}
+
+	// Normal management
+
+	if ( p->getNormal() )
+	{
+		addAttributeNode( "normal", "Normal" );
+
+		addAttributeArray( "vector" );
+		printIndent();
+		_out << p->getNormal() << std::endl;
+		endAttributeArray();
+
+		endNode();
+	}
+
+	addAttributeValue( "solid", "FALSE" );
+	addAttributeValue( "normalPerVertex", "FALSE" );
+
+	// Texture coordinates
+
+	const citygml::TexCoords *texCoords = p->getTexCoords();
+
+	if ( texCoords )
+	{
+		addAttributeNode( "texCoord", "TextureCoordinate" );
+
+		addAttributeArray( "point" );
+		printIndent();
+		for ( unsigned int k = 0; k < p->size(); k++ ) _out << (*texCoords)[k] << ", ";
+		_out << std::endl;
+		endAttributeArray();
+
+		endNode();
+	}
+
+	endNode();
+
+	// Material management
+
+	const citygml::Appearance *mat = p->getAppearance();
+
+	bool colorset = false;
+
+	//if ( mat )
+	{
+		addAttributeNode( "appearance", "Appearance" );
+
+		bool colorset = false;
+
+		if ( const citygml::Material* m = dynamic_cast<const citygml::Material*>( mat ) )
+		{
+			addAttributeNode( "material", "Material" );
+
+			addAttributeValue( "diffuseColor", m->getDiffuse() );
+			addAttributeValue( "ambientIntensity", m->getAmbientIntensity() );
+			addAttributeValue( "specularColor", m->getSpecular() );
+			addAttributeValue( "emissiveColor", m->getEmissive() );
+			addAttributeValue( "shininess", m->getShininess() );
+			addAttributeValue( "transparency", m->getTransparency() );
+
+			endNode();
+			colorset = true;
+		}
+		else if ( const citygml::Texture* t = dynamic_cast<const citygml::Texture*>( mat ) ) 
+		{
+
+			addAttributeNode( "texture", "ImageTexture" );
+			addAttributeValue( "url", t->getUrl() );
+			endNode();
+			//colorset = true;
+		}
+		if ( !colorset )
+		{
+			addAttributeNode( "material", "Material" );
+
+			TVec3f color( object->getDefaultColor().rgba );
+			if ( g->getType() == citygml::GT_Roof )
+				color = TVec3f( 0.9f, 0.1f, 0.1f );
+			addAttributeValue( "diffuseColor", (TVec3f&)color );
+
+			endNode();
+		}
+
+		endNode();
+	}
+
+	// That's it!		
+	endNode();
 }
