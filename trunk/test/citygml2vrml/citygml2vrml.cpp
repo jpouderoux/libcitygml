@@ -42,7 +42,7 @@ private:
 
 	inline void addComment(const std::string& cmt) {  printIndent(); _out << "# " << cmt << std::endl; }
 
-	inline void addNode( const std::string &node ) { printIndent(); _out << node << " {" << std::endl; _indentCount++; }
+	inline void beginNode( const std::string &node ) { printIndent(); _out << node << " {" << std::endl; _indentCount++; }
 
 	inline void endNode() { _indentCount--; printIndent(); _out << "}" << std::endl; }
 
@@ -54,13 +54,13 @@ private:
 
 	inline void addAttributeValue( const std::string &attr, const char* val ) { printIndent(); _out << attr << " " << val << std::endl; }
 
-	inline void addAttributeNode( const std::string &attr, const std::string &node ) { printIndent(); _out << attr << " " << node << " {" << std::endl; _indentCount++; }
+	inline void beginAttributeNode( const std::string &attr, const std::string &node ) { printIndent(); _out << attr << " " << node << " {" << std::endl; _indentCount++; }
 
-	inline void addAttributeArray( const std::string &attr ) { addAttribute( attr ); _out << " [" << std::endl; _indentCount++; }
+	inline void beginAttributeArray( const std::string &attr ) { addAttribute( attr ); _out << " [" << std::endl; _indentCount++; }
 
 	inline void endAttributeArray() { _indentCount--; printIndent(); _out << "]" << std::endl; }
 
-	inline void beginGroup() { addNode("Group"); addAttributeArray( "children" ); }
+	inline void beginGroup() { beginNode("Group"); beginAttributeArray( "children" ); }
 
 	inline void endGroup() { endAttributeArray(); endNode(); }
 
@@ -122,6 +122,7 @@ bool VRML97Converter::convert( const std::string& outFilename )
 	if ( _out.fail() ) { std::cerr << "Unable to create file " << outFilename << "!" << std::endl; return false; }
 
 	_out << "#VRML V2.0 utf8" << std::endl;
+	_out << "# Converted from a CityGML model using citygml2vrml (http://code.google.com/p/libcitygml)" << std::endl << std::endl;
 
 	const citygml::CityObjectsMap& cityObjectsMap = _cityModel->getCityObjectsMap();
 
@@ -133,13 +134,12 @@ bool VRML97Converter::convert( const std::string& outFilename )
 
 		std::cout << " Creation of " << v.size() << " " << citygml::getCityObjectsClassName( it->first ) << ( ( v.size() > 1 ) ? "s" : "" ) << "..." << std::endl;
 
-		addComment( citygml::getCityObjectsClassName( it->first ) );
+		addComment( "Object type: " + citygml::getCityObjectsClassName( it->first ) + ( ( v.size() > 1 ) ? "s" : "" ) );
 		beginGroup();
 
 		for ( unsigned int i = 0; i < v.size(); i++ ) dumpCityObject( v[i] );
 
 		endGroup();
-		break;
 	}
 
 	_out.close();
@@ -151,7 +151,7 @@ void VRML97Converter::dumpCityObject( const citygml::CityObject* object )
 {
 	if ( !object || object->size() == 0 ) return;
 
-	addComment( object->getId() );
+	addComment(  object->getTypeAsString() + ": " + object->getId() );
 
 	beginGroup();	
 
@@ -178,16 +178,16 @@ void VRML97Converter::dumpPolygon( const citygml::CityObject* object, const city
 	ss << "  " << p->size() << " points & " << p->getIndicesSize() << " triangles";
 	addComment( "Polygon: " + p->getId() + ss.str() );
 
-	addNode( "Shape" );
+	beginNode( "Shape" );
 
 	// Geometry management
 
-	addAttributeNode( "geometry", "IndexedFaceSet" );
+	beginAttributeNode( "geometry", "IndexedFaceSet" );
 
 	{
-		addAttributeNode( "coord", "Coordinate" );
+		beginAttributeNode( "coord", "Coordinate" );
 
-		addAttributeArray( "point" );
+		beginAttributeArray( "point" );
 		printIndent();
 		for ( unsigned int k = 0; k < p->size(); k++ ) _out << (*p)[k] << ", ";
 		_out << std::endl;
@@ -198,7 +198,7 @@ void VRML97Converter::dumpPolygon( const citygml::CityObject* object, const city
 
 	if ( p->getIndices() )
 	{
-		addAttributeArray( "coordIndex" );
+		beginAttributeArray( "coordIndex" );
 		printIndent();
 		for ( unsigned int k = 0 ; k < p->getIndicesSize() / 3; k++ )
 			_out << indices[ k * 3 + 0 ] << " " << indices[ k * 3 + 1 ] << " " << indices[ k * 3 + 2 ] << " -1, ";
@@ -210,9 +210,9 @@ void VRML97Converter::dumpPolygon( const citygml::CityObject* object, const city
 
 	if ( p->getNormal() )
 	{
-		addAttributeNode( "normal", "Normal" );
+		beginAttributeNode( "normal", "Normal" );
 
-		addAttributeArray( "vector" );
+		beginAttributeArray( "vector" );
 		printIndent();
 		_out << p->getNormal() << std::endl;
 		endAttributeArray();
@@ -220,7 +220,7 @@ void VRML97Converter::dumpPolygon( const citygml::CityObject* object, const city
 		endNode();
 	}
 
-	addAttributeValue( "solid", "FALSE" );
+	//addAttributeValue( "solid", "FALSE" );
 	addAttributeValue( "normalPerVertex", "FALSE" );
 
 	// Texture coordinates
@@ -229,9 +229,9 @@ void VRML97Converter::dumpPolygon( const citygml::CityObject* object, const city
 
 	if ( texCoords )
 	{
-		addAttributeNode( "texCoord", "TextureCoordinate" );
+		beginAttributeNode( "texCoord", "TextureCoordinate" );
 
-		addAttributeArray( "point" );
+		beginAttributeArray( "point" );
 		printIndent();
 		for ( unsigned int k = 0; k < p->size(); k++ ) _out << (*texCoords)[k] << ", ";
 		_out << std::endl;
@@ -243,20 +243,16 @@ void VRML97Converter::dumpPolygon( const citygml::CityObject* object, const city
 	endNode();
 
 	// Material management
-
-	const citygml::Appearance *mat = p->getAppearance();
-
-	bool colorset = false;
-
-	//if ( mat )
 	{
-		addAttributeNode( "appearance", "Appearance" );
+		beginAttributeNode( "appearance", "Appearance" );
 
 		bool colorset = false;
 
+		const citygml::Appearance *mat = p->getAppearance();
+
 		if ( const citygml::Material* m = dynamic_cast<const citygml::Material*>( mat ) )
 		{
-			addAttributeNode( "material", "Material" );
+			beginAttributeNode( "material", "Material" );
 
 			addAttributeValue( "diffuseColor", m->getDiffuse() );
 			addAttributeValue( "ambientIntensity", m->getAmbientIntensity() );
@@ -268,17 +264,18 @@ void VRML97Converter::dumpPolygon( const citygml::CityObject* object, const city
 			endNode();
 			colorset = true;
 		}
-		else if ( const citygml::Texture* t = dynamic_cast<const citygml::Texture*>( mat ) ) 
+		
+		if ( const citygml::Texture* t = dynamic_cast<const citygml::Texture*>( mat ) ) 
 		{
-
-			addAttributeNode( "texture", "ImageTexture" );
+			beginAttributeNode( "texture", "ImageTexture" );
 			addAttributeValue( "url", t->getUrl() );
 			endNode();
-			//colorset = true;
+			colorset = true;
 		}
+
 		if ( !colorset )
 		{
-			addAttributeNode( "material", "Material" );
+			beginAttributeNode( "material", "Material" );
 
 			TVec3f color( object->getDefaultColor().rgba );
 			if ( g->getType() == citygml::GT_Roof )
