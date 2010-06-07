@@ -80,16 +80,24 @@ int main( int argc, char **argv )
 		std::cout << std::endl << "This program converts CityGML files to a VRML97 representation" << std::endl;
 		std::cout << "More info & updates on http://code.google.com/p/libcitygml" << std::endl;
 		std::cout << "Version built on " << __DATE__ << " at " << __TIME__ << std::endl << std::endl;
-		std::cout << "\tUsage: citygml2vrml <inputfile.gml> <outputfile.wrl>" << std::endl; 
+		std::cout << "\tUsage: citygml2vrml [-optimize] <inputfile.gml> <outputfile.wrl>" << std::endl; 
+		std::cout << "\tOptions:" << std::endl;
+		std::cout << "\t -optimize   Merge geometries & polygons with similar properties to reduce file & scene size" << std::endl;
 		return -1;
 	}
 
-	std::cout << "Parsing CityGML file " << argv[1] << "..." << std::endl;
+	int fargc = 1;
+
+	bool optimize = false;
+
+	if ( std::string( argv[1] ) == "-optimize" ) { optimize = true; fargc++; }
+
+	std::cout << "Parsing CityGML file " << argv[fargc] << "..." << std::endl;
 
 	time_t start;
 	time( &start );
 
-	citygml::CityModel *city = citygml::load( argv[1], citygml::COT_All );
+	citygml::CityModel *city = citygml::load( argv[fargc], citygml::COT_All, 0, 4, optimize );
 
 	time_t end;
 	time( &end );
@@ -103,7 +111,7 @@ int main( int argc, char **argv )
 
 	VRML97Converter converter( city );
 
-	if ( converter.convert( argv[2] ) )
+	if ( converter.convert( argv[fargc+1] ) )
 		std::cout << "Done." << std::endl;
 	else 
 		std::cout << "Failed!" << std::endl;
@@ -172,11 +180,10 @@ void VRML97Converter::dumpGeometry( const citygml::CityObject* object, const cit
 
 void VRML97Converter::dumpPolygon( const citygml::CityObject* object, const citygml::Geometry* g, const citygml::Polygon* p )
 {
-	if ( !p || !p->getIndices() || p->getIndicesSize() == 0 ) return;
+	if ( !p || p->getIndices().size() == 0 ) return;
 
-	unsigned int* indices = p->getIndices();
 	std::stringstream ss;
-	ss << "  " << p->size() << " points & " << p->getIndicesSize() << " triangles";
+	ss << "  " << p->size() << " points & " << p->getIndices().size() << " triangles & " << p->getNormals().size() << " normals & " << p->getTexCoords().size() << " texCoords";
 	addComment( "Polygon: " + p->getId() + ss.str() );
 
 	beginNode( "Shape" );
@@ -197,11 +204,12 @@ void VRML97Converter::dumpPolygon( const citygml::CityObject* object, const city
 		endNode();
 	}
 
-	if ( p->getIndices() )
+	if ( p->getIndices().size() > 0 )
 	{
+		const std::vector<unsigned int>& indices = p->getIndices();
 		beginAttributeArray( "coordIndex" );
 		printIndent();
-		for ( unsigned int k = 0 ; k < p->getIndicesSize() / 3; k++ )
+		for ( unsigned int k = 0 ; k < indices.size() / 3; k++ )
 			_out << indices[ k * 3 + 0 ] << " " << indices[ k * 3 + 1 ] << " " << indices[ k * 3 + 2 ] << " -1, ";
 		_out << std::endl;
 		endAttributeArray();
@@ -209,32 +217,30 @@ void VRML97Converter::dumpPolygon( const citygml::CityObject* object, const city
 
 	// Normal management
 
-	if ( p->getNormal() )
+	if ( p->getNormals().size() > 0 )
 	{
+		const std::vector<TVec3f>& normals = p->getNormals();
 		beginAttributeNode( "normal", "Normal" );
-
 		beginAttributeArray( "vector" );
 		printIndent();
-		_out << p->getNormal() << std::endl;
+		for ( unsigned int k = 0 ; k < normals.size(); k++ )
+			_out << normals[k] << ", ";
+		_out << std::endl;
 		endAttributeArray();
-
 		endNode();
+		addAttributeValue( "normalPerVertex", "TRUE" );
 	}
-
-	//addAttributeValue( "solid", "FALSE" );
-	addAttributeValue( "normalPerVertex", "FALSE" );
 
 	// Texture coordinates
 
-	const citygml::TexCoords *texCoords = p->getTexCoords();
-
-	if ( texCoords )
+	if ( p->getTexCoords().size() > 0 )
 	{
+		const citygml::TexCoords& texCoords = p->getTexCoords();
 		beginAttributeNode( "texCoord", "TextureCoordinate" );
 
 		beginAttributeArray( "point" );
 		printIndent();
-		for ( unsigned int k = 0; k < p->size(); k++ ) _out << (*texCoords)[k] << ", ";
+		for ( unsigned int k = 0; k < texCoords.size(); k++ ) _out << texCoords[k] << ", ";
 		_out << std::endl;
 		endAttributeArray();
 

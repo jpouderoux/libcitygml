@@ -21,6 +21,8 @@
 
 #include "citygml.h"
 
+//#define XERCES_STATIC_LIBRARY
+
 #include <xercesc/util/XMLString.hpp>
 #include <xercesc/parsers/SAXParser.hpp>
 #include <xercesc/sax/HandlerBase.hpp>
@@ -153,7 +155,7 @@ namespace citygml
 	{
 	public:
 
-		CityGMLHandler( CityObjectsTypeMask objectsMask = COT_All, unsigned int minLOD = 0, unsigned int maxLOD = 4, bool pruneEmptyObjects = true, bool tesselate = true );
+		CityGMLHandler( CityObjectsTypeMask objectsMask = COT_All, unsigned int minLOD = 0, unsigned int maxLOD = 4, bool optimize = true, bool pruneEmptyObjects = true, bool tesselate = true );
 
 		~CityGMLHandler( void );
 
@@ -243,6 +245,7 @@ namespace citygml
 
 		std::stringstream _buff;
 
+		bool _optimize;
 		bool _tesselate;
 	
 		CityModel* _model;
@@ -289,11 +292,11 @@ namespace citygml
 	std::map<std::string, CityGMLNodeType> CityGMLHandler::s_cityGMLNodeTypeMap;
 	std::vector< std::string > CityGMLHandler::s_knownNamespace;
 
-	CityGMLHandler::CityGMLHandler( CityObjectsTypeMask objectsMask, unsigned int minLOD, unsigned int maxLOD, bool pruneEmptyObjects, bool tesselate ) 
+	CityGMLHandler::CityGMLHandler( CityObjectsTypeMask objectsMask, unsigned int minLOD, unsigned int maxLOD, bool optimize, bool pruneEmptyObjects, bool tesselate ) 
 		: _tesselate( tesselate ), _model( NULL ), _currentCityObject( NULL ), 
 		_currentGeometry( NULL ), _currentPolygon( NULL ), _currentRing( NULL ),  _currentGeometryType( GT_Unknown ),
 		_currentAppearance( NULL ), _objectsMask( objectsMask ), _minLOD( minLOD ), _maxLOD( maxLOD ), _currentLOD( minLOD ), 
-		_pruneEmptyObjects( pruneEmptyObjects ), _filterNodeType( false ), _filterDepth( 0 ), _exterior( true )
+		_optimize( optimize ), _pruneEmptyObjects( pruneEmptyObjects ), _filterNodeType( false ), _filterDepth( 0 ), _exterior( true )
 	{ 
 		cityGMLInit(); 
 	}
@@ -683,7 +686,7 @@ namespace citygml
 
 		case NODETYPE( CityModel ):
 			MODEL_FILTER();
-			_model->finish();
+			_model->finish( _optimize );
 			break;
 
 			// City objects management
@@ -821,7 +824,10 @@ namespace citygml
 	case NODETYPE( textureMap ):
 	case NODETYPE( imageURI ):
 		if ( Texture* texture = dynamic_cast<Texture*>( _currentAppearance ) ) 
+		{
 			texture->_url = buffer.str();
+			std::replace( texture->_url.begin(), texture->_url.end(), '\\', '/' );
+		}
 		break;
 
 	case NODETYPE( target ):
@@ -929,7 +935,7 @@ namespace citygml
 
 	// Parsing methods
 
-	CityModel* load( std::istream& stream, CityObjectsTypeMask objectsMask, unsigned int minLOD, unsigned int maxLOD, bool pruneEmptyObjects, bool tessalate )
+	CityModel* load( std::istream& stream, CityObjectsTypeMask objectsMask, unsigned int minLOD, unsigned int maxLOD, bool optimize, bool pruneEmptyObjects, bool tessalate )
 	{
 		try 
 		{
@@ -941,7 +947,7 @@ namespace citygml
 			return false;
 		}
 
-		CityGMLHandler* handler = new CityGMLHandler( objectsMask, minLOD, maxLOD, pruneEmptyObjects, tessalate );
+		CityGMLHandler* handler = new CityGMLHandler( objectsMask, minLOD, maxLOD, optimize, pruneEmptyObjects, tessalate );
 
 		xercesc::SAXParser* parser = new xercesc::SAXParser();
 		parser->setDoNamespaces( false );    	
@@ -977,12 +983,12 @@ namespace citygml
 		return model;
 	}
 
-	CityModel* load( const std::string& fname, CityObjectsTypeMask objectsMask, unsigned int minLOD, unsigned int maxLOD, bool pruneEmptyObjects, bool tessalate )
+	CityModel* load( const std::string& fname, CityObjectsTypeMask objectsMask, unsigned int minLOD, unsigned int maxLOD, bool optimize, bool pruneEmptyObjects, bool tessalate )
 	{
 		std::ifstream file;
 		file.open( fname.c_str(), std::ifstream::in );
 		if ( file.fail() ) { std::cerr << "CityGML: Unable to open file " << fname << "!" << std::endl; return NULL; }
-		CityModel* model = load( file, objectsMask, minLOD, maxLOD, pruneEmptyObjects, tessalate );
+		CityModel* model = load( file, objectsMask, minLOD, maxLOD, optimize, pruneEmptyObjects, tessalate );
 		file.close();
 		return model;
 	}

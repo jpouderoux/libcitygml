@@ -79,11 +79,11 @@ namespace citygml
 
 	LIBCITYGML_EXPORT CityModel* load( std::istream& stream, CityObjectsTypeMask objectsMask = COT_All, 
 		unsigned int minLOD = 0, unsigned int maxLOD = 4, 
-		bool pruneEmptyObjects = true, bool tesselate = true );
+		bool optimize = true, bool pruneEmptyObjects = true, bool tesselate = true );
 
 	LIBCITYGML_EXPORT CityModel* load( const std::string& fileName, CityObjectsTypeMask objectsMask = COT_All, 
 		unsigned int minLOD = 0, unsigned int maxLOD = 4, 
-		bool pruneEmptyObjects = true, bool tesselate = true );
+		bool optimize = true, bool pruneEmptyObjects = true, bool tesselate = true );
 
 	///////////////////////////////////////////////////////////////////////////////
 
@@ -219,10 +219,14 @@ namespace citygml
 			return ( it != _appearanceMap.end() ) ? it->second : NULL;
 		}
 
-		inline TexCoords* getTexCoords( const std::string& nodeid ) const
+		inline bool getTexCoords( const std::string& nodeid, TexCoords &texCoords) const
 		{
+			texCoords.clear();
 			std::map<std::string, TexCoords*>::const_iterator it = _texCoordsMap.find( nodeid );
-			return ( it != _texCoordsMap.end() ) ? (it->second) : NULL;
+			if ( it == _texCoordsMap.end() ) return false;
+			if ( !it->second ) return false;
+			texCoords = *it->second;
+			return true;
 		}
 
 	protected:
@@ -261,7 +265,7 @@ namespace citygml
 
 		inline void addVertex( const TVec3d& v ) { _vertices.push_back( v ); }
 
-		LIBCITYGML_EXPORT TVec3d computeNormal( void ) const;
+		LIBCITYGML_EXPORT TVec3f computeNormal( void ) const;
 
 	protected:
 		inline std::vector<TVec3d>& getVertices( void ) { return _vertices; }
@@ -283,7 +287,7 @@ namespace citygml
 		friend class Tesseletor;
 		friend class CityModel;
 	public:
-		Polygon( const std::string& id ) : Object( id ), _indices( NULL ), _indicesSize( 0 ), _appearance( NULL ), _texCoords( NULL ), _exteriorRing( NULL ), _negNormal( false ) {}
+		Polygon( const std::string& id ) : Object( id ), _indices( NULL ),  _appearance( NULL ), _texCoords( NULL ), _exteriorRing( NULL ), _negNormal( false ) {}
 
 		LIBCITYGML_EXPORT ~Polygon( void );
 
@@ -293,13 +297,12 @@ namespace citygml
 		inline const TVec3d& operator[]( unsigned int i ) const { return _vertices[i]; }		
 
 		// Get the indices
-		inline unsigned int getIndicesSize( void ) const { return _indicesSize; }	
-		inline unsigned int* getIndices( void ) const { return _indices; }
+		inline const std::vector<unsigned int>& getIndices( void ) const { return _indices; }
 
-		// Get the polygon normal
-		inline const TVec3d& getNormal( void ) const { return _normal; }
+		// Get the normals
+		inline const std::vector<TVec3f>& getNormals( void ) const { return _normals; }
 
-		inline const TexCoords* getTexCoords( void ) const { return _texCoords; }
+		inline const TexCoords& getTexCoords( void ) const { return _texCoords; }
 
 		inline const Appearance* getAppearance( void ) const { return _appearance; }
 
@@ -313,19 +316,18 @@ namespace citygml
 		void mergeRings( void );
 		void clearRings( void );
 
-		void computeNormal( void );
+		TVec3f computeNormal( void );
+
+		bool merge( Polygon* );
 
 	protected:
 		std::vector<TVec3d> _vertices;
-
-		TVec3d _normal;
-
-		unsigned int* _indices;
-		unsigned int _indicesSize;
+		std::vector<TVec3f> _normals;
+		std::vector<unsigned int> _indices;
 
 		Appearance* _appearance;
-
-		TexCoords* _texCoords; 
+		
+		TexCoords _texCoords; 
 
 		LinearRing* _exteriorRing;
 		std::vector<LinearRing*> _interiorRings;
@@ -370,7 +372,9 @@ namespace citygml
 	protected:
 		void addPolygon( Polygon* );
 
-		void finish( AppearanceManager&, Appearance* );
+		void finish( AppearanceManager&, Appearance*, bool optimize );
+
+		bool merge( Geometry* );
 
 	protected:
 		GeometryType _type;
@@ -423,7 +427,7 @@ namespace citygml
 		inline std::vector< CityObject* >& getChildren( void ) { return _children; }
 
 	protected:
-		void finish( AppearanceManager& );
+		void finish( AppearanceManager&, bool optimize );
 
 	protected:
 		CityObjectsType _type;
@@ -640,7 +644,7 @@ namespace citygml
 	protected:
 		void addCityObject( CityObject* o );
 
-		void finish( void );
+		void finish( bool optimize );
 
 	protected:
 		Envelope _envelope;
