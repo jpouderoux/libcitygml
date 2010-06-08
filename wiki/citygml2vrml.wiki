@@ -1,8 +1,6 @@
 = citygml2vrml=
 
-Last version: 0.1.2
-
-citygml2vrml v.0.1 (c) 2010 Joachim Pouderoux, BRGM
+Last version: *citygml2vrml v.0.1.2*
 
 citygml2vrml is a command line utility to convert CityGML files to a VRML97 representation.
 
