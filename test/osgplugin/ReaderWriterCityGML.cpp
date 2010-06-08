@@ -47,6 +47,7 @@ public:
 		supportsOption( "objectsMask", "Set the objects mask" );
 		supportsOption( "minLOD", "Minimum LOD level to fetch" );
 		supportsOption( "maxLOD", "Maximum LOD level to fetch" );
+		supportsOption( "optimize", "Optimize the geometries & polygons of the CityGML model to reduce the number of instanced objects" );
 		supportsOption( "pruneEmptyObjects", "Prune empty objects (ie. without -supported- geometry)" );
 	}
 
@@ -60,15 +61,31 @@ private:
 	public:
 		Settings( void ) : _printNames( false ),
 			_objectsMask( citygml::COT_All ), _minLOD( 1 ), _maxLOD( 4 ),
-			_pruneEmptyObjects( false ) {}
+			_optimize( false ), _pruneEmptyObjects( false ) {}
 
-		void parseOptions( const osgDB::ReaderWriter::Options* );
+		void parseOptions( const osgDB::ReaderWriter::Options* )
+		{
+			if ( !options ) return;
+			std::istringstream iss( options->getOptionString() );
+			std::string currentOption;
+			while ( iss >> currentOption )
+			{
+				std::transform( currentOption.begin(), currentOption.end(), currentOption.begin(), tolower );
+				if ( currentOption == "names" ) _printNames = true;
+				else if ( currentOption == "objectsmask" ) { int i; iss >> i; _objectsMask = i; }
+				else if ( currentOption == "minlod" ) iss >> _minLOD;
+				else if ( currentOption == "maxlod" ) iss >> _maxLOD;
+				else if ( currentOption == "optimize" ) _optimize = true;
+				else if ( currentOption == "pruneemptyobjects" ) _pruneEmptyObjects = true;		
+			}
+		}
 
 	public:
 		bool _printNames;
 		citygml::CityObjectsTypeMask _objectsMask;
 		unsigned int _minLOD;
 		unsigned int _maxLOD;
+		bool _optimize;
 		bool _pruneEmptyObjects;
 		std::map< std::string, osg::Texture2D* > _textureMap;
 	};
@@ -79,22 +96,6 @@ private:
 
 // Register with Registry to instantiate the above reader/writer.
 REGISTER_OSGPLUGIN( citygml, ReaderWriterCityGML )
-
-void ReaderWriterCityGML::Settings::parseOptions( const osgDB::ReaderWriter::Options* options )
-{
-	if ( !options ) return;
-	std::istringstream iss( options->getOptionString() );
-	std::string currentOption;
-	while ( iss >> currentOption )
-	{
-		std::transform( currentOption.begin(), currentOption.end(), currentOption.begin(), tolower );
-		if ( currentOption == "names" ) _printNames = true;
-		else if ( currentOption == "objectsmask" ) { int i; iss >> i; _objectsMask = i; }
-		else if ( currentOption == "minlod" ) iss >> _minLOD;
-		else if ( currentOption == "maxlod" ) iss >> _maxLOD;
-		else if ( currentOption == "pruneemptyobjects" ) _pruneEmptyObjects = true;
-	}
-}
 
 // Read CityGML file using libcitygml and generate the OSG scenegraph
 osgDB::ReaderWriter::ReadResult ReaderWriterCityGML::readNode( const std::string& file, const osgDB::ReaderWriter::Options* options ) const
@@ -123,7 +124,7 @@ osgDB::ReaderWriter::ReadResult ReaderWriterCityGML::readNode( const std::string
 
 	osg::notify(osg::NOTICE) << "Parsing CityGML file " << fileName << "..." << std::endl;
 
-	citygml::CityModel *city = citygml::load( fileName, settings._objectsMask, settings._minLOD, settings._maxLOD, settings._pruneEmptyObjects );
+	citygml::CityModel *city = citygml::load( fileName, settings._objectsMask, settings._minLOD, settings._maxLOD, settings._optimize, settings._pruneEmptyObjects );
 	
 	if ( !city ) return NULL;
 
@@ -169,7 +170,7 @@ osgDB::ReaderWriter::ReadResult ReaderWriterCityGML::readNode( const std::string
 osg::Geode* ReaderWriterCityGML::createCityObject( citygml::CityObject* object, Settings& settings ) const
 {
 	// Skip objects without geometry
-	if ( object->size() == 0 ) return NULL;
+	if ( !object || object->size() == 0 ) return NULL;
 
 	osg::ref_ptr<osg::Geode> geode = new osg::Geode;
 	geode->setName( object->getId() );
@@ -187,12 +188,6 @@ osg::Geode* ReaderWriterCityGML::createCityObject( citygml::CityObject* object, 
 	{
 		const citygml::Geometry& geometry = *object->getGeometry( i );
 
-		if ( ( geometry.getType() == citygml::GT_Wall )
-			|| ( geometry.getType() == citygml::GT_Ground ) ) 
-		{
-			settings._foundationsElements[ geometry.getType() ].push_back( object->getGeometry( i ) );
-		}
-
 		for ( unsigned int j = 0; j < geometry.size(); j++ ) 
 		{
 			const citygml::Polygon* p = geometry[j];
@@ -202,33 +197,39 @@ osg::Geode* ReaderWriterCityGML::createCityObject( citygml::CityObject* object, 
 
 			osg::Geometry* geom = new osg::Geometry();
 			
-			// Translate the vertices to the origin (first encountered point for now)
+			// Vertices
 			osg::Vec3Array* vertices = new osg::Vec3Array;
+			const std::vector<TVec3d>& vert = p->getVertices();
+			vertices->reserve( vert.size() );
 			for ( unsigned int k = 0; k < p->size(); k++ )
 			{
-				osg::Vec3d pt( (*p)[k][0], (*p)[k][1], (*p)[k][2] );
+				osg::Vec3d pt( vert[k][0], vert[k][1], vert[k][2] );
 				vertices->push_back( pt );
 			}
 
 			geom->setVertexArray( vertices );
 
-			osg::DrawElementsUInt* triangles = new osg::DrawElementsUInt( osg::PrimitiveSet::TRIANGLES, 0 );
-			triangles->reserve( p->getIndicesSize() );
-			unsigned int* indices = p->getIndices();
-			for ( unsigned int i = 0 ; i < p->getIndicesSize() / 3; i++ )
+			// Indices
+			osg::DrawElementsUInt* indices = new osg::DrawElementsUInt( osg::PrimitiveSet::TRIANGLES, 0 );
+			const std::vector<unsigned int>& ind = p->getIndices();
+			indices->reserve( ind.size() );
+			for ( unsigned int i = 0 ; i < ind.size() / 3; i++ )
 			{
-				triangles->push_back( indices[ i * 3 + 0 ] );
-				triangles->push_back( indices[ i * 3 + 1 ] );
-				triangles->push_back( indices[ i * 3 + 2 ] );	
+				indices->push_back( ind[ i * 3 + 0 ] );
+				indices->push_back( ind[ i * 3 + 1 ] );
+				indices->push_back( ind[ i * 3 + 2 ] );	
 			}
-			geom->addPrimitiveSet( triangles );
+			geom->addPrimitiveSet( indices );
 			
-			// Normal management
+			// Normals			
+			osg::ref_ptr<osg::Vec3Array> normals = new osg::Vec3Array;
+			const std::vector<TVec3f>& norm = p->getNormals();
+			triangles->reserve( norm.size() );
+			for ( unsigned int k = 0; k < norm->size(); k++ )
+				normals->push_back( osg::Vec3( norm[k].x, norm[k].y, norm[k].z ) );
 			
-			osg::ref_ptr<osg::Vec3Array> shared_normals = new osg::Vec3Array;
-			shared_normals->push_back( osg::Vec3( p->getNormal().x, p->getNormal().y, p->getNormal().z ) );
-			geom->setNormalArray( shared_normals.get() );
-			geom->setNormalBinding( osg::Geometry::BIND_OVERALL );
+			geom->setNormalArray( normals.get() );
+			geom->setNormalBinding( osg::Geometry::BIND_PER_VERTEX );
 
 			// Material management
 
@@ -266,9 +267,9 @@ osg::Geode* ReaderWriterCityGML::createCityObject( citygml::CityObject* object, 
 				}
 				else if ( const citygml::Texture* t = dynamic_cast<const citygml::Texture*>( mat ) ) 
 				{
-					const citygml::TexCoords *texCoords = p->getTexCoords();
+					const citygml::TexCoords& texCoords = p->getTexCoords();
 
-					if ( texCoords )
+					if ( texCoords.size() > 0 )
 					{
 						osg::Texture2D* texture = NULL;
 
@@ -298,9 +299,9 @@ osg::Geode* ReaderWriterCityGML::createCityObject( citygml::CityObject* object, 
 						if ( texture )
 						{
 							osg::ref_ptr<osg::Vec2Array> tex = new osg::Vec2Array;
-
-							for ( unsigned int i = 0; i < texCoords->size(); i++ )
-								tex->push_back( osg::Vec2( (*texCoords)[i].x, (*texCoords)[i].y ) );
+							tex->reserve( texCoords.size() );
+							for ( unsigned int k = 0; k < texCoords.size(); k++ )
+								tex->push_back( osg::Vec2( texCoords[k].x, texCoords[k].y ) );
 
 							geom->setTexCoordArray( 0, tex );
 
