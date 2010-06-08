@@ -1,8 +1,8 @@
-= citygml2vrml=
+#labels Featured
+
+*citygml2vrml* is a command line utility to convert CityGML files to a VRML97 representation.
 
 Last version: *citygml2vrml v.0.1.2*
-
-citygml2vrml is a command line utility to convert CityGML files to a VRML97 representation.
 
 == Usage ==
 {{{
@@ -28,3 +28,8 @@ citygml2vrml is a command line utility to convert CityGML files to a VRML97 repr
   -minLOD <level> Minimum LOD level to parse (default:0)
   -maxLOD <level> Maximum LOD level to parse (default:4)
 }}}
+
+== Download ==
+
+The source code of last version of *citygml2vrml* is available in the googlecode SVN repository.
+You can donwload a binary distribution for Windows [http://code.google.com/p/libcitygml/downloads/list here].
