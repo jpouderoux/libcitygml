@@ -292,10 +292,8 @@ namespace citygml
 		LIBCITYGML_EXPORT ~Polygon( void );
 
 		// Get the vertices
-		inline unsigned int size( void ) const { return _vertices.size(); }
-		inline std::vector<TVec3d>& getVertices( void ) { return _vertices; }
-		inline const TVec3d& operator[]( unsigned int i ) const { return _vertices[i]; }		
-
+		inline const std::vector<TVec3d>& getVertices( void ) const { return _vertices; }
+		
 		// Get the indices
 		inline const std::vector<unsigned int>& getIndices( void ) const { return _indices; }
 

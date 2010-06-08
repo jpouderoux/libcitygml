@@ -44,7 +44,7 @@ namespace citygml
 		for ( unsigned int i = 0; i < s.size(); i++ )
 		{
 			os << *s[i];
-			count += s[i]->size();
+			count += s[i]->getVertices().size();
 		}
 
 		os << "  @ " << s._polygons.size() << " polys [" << count << " vertices]" << std::endl;
@@ -98,7 +98,7 @@ namespace citygml
 		~Tesseletor( void );
 
 		// Add a new contour - add the exterior ring first, then interiors 
-		void addContour( const std::vector<TVec3d>& pts );
+		void addContour( const std::vector<TVec3d>& );
 
 		// Let's tesselate!
 		void compute( void );
@@ -219,7 +219,7 @@ namespace citygml
 
 		if ( p->getAppearance() != getAppearance() ) return false;
 
-		if ( p->size() == 0 ) return true;
+		if ( p->getVertices().size() == 0 ) return true;
 
 		// merge vertices
 		unsigned int oldVSize = _vertices.size();
@@ -253,13 +253,14 @@ namespace citygml
 		{
 			unsigned int oldSize = min( _texCoords.size(), oldVSize );
 			unsigned int pSize = min( p->_texCoords.size(), pVSize );
-			//std::cout << "merging texcoords from " << oldSize << " with " <<  pSize;
 			_texCoords.resize( oldSize + pSize );
 			for ( unsigned int i = 0; i < pSize; i++ )
 				_texCoords[ oldSize + i ] = p->_texCoords[ i ];
-		//	std::cout << "  = " << _texCoords.size() << " : pts: " << _vertices.size() << std::endl;
 			p->_texCoords.clear();
 		}
+
+		// merge ids
+		_id = _id + "+" + p->_id;
 
 		return true;
 	}
@@ -437,6 +438,8 @@ namespace citygml
 			_polygons.push_back( g->_polygons[ i ] );
 
 		g->_polygons.clear();
+
+		_id = _id + "+" + g->_id;
 
 		return true;
 	}
@@ -628,13 +631,13 @@ namespace citygml
 				}
 			}
 			break;
-		default: std::cerr << "CityGML triangulator: non-supported GLU tesselator primitive " << tess->_curMode << std::endl;
+		default: std::cerr << "CityGML tesseletor: non-supported GLU tesselator primitive " << tess->_curMode << std::endl;
 		}
 		tess->_curIndices.clear();
 	}
 
 	void CALLBACK Tesseletor::errorCallback( GLenum errorCode, void* userData )
 	{
-		std::cerr << "CityGML triangulator error: " << gluErrorString( errorCode ) << std::endl;
+		std::cerr << "CityGML tesseletor error: " << gluErrorString( errorCode ) << std::endl;
 	}
 }

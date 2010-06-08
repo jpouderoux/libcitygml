@@ -19,7 +19,7 @@
 #include <time.h> 
 #include "citygml.h"
 
-
+// VRML97 Helper class to produce a hierarchy of VRML nodes with attributes 
 class VRML97Converter 
 {
 public:
@@ -48,8 +48,6 @@ private:
 
 	inline void addAttribute( const std::string &attr ) { printIndent(); _out << attr << " "; }
 
-	//template<class T> inline void addAttributeValue( const std::string &attr, T &val ) { printIndent(); _out << attr << " " << val << std::endl; }
-
 	template<class T> inline void addAttributeValue( const std::string &attr, T val ) { printIndent(); _out << attr << " " << val << std::endl; }
 
 	inline void addAttributeValue( const std::string &attr, const char* val ) { printIndent(); _out << attr << " " << val << std::endl; }
@@ -68,29 +66,44 @@ private:
 	citygml::CityModel* _cityModel;
 	int _indentCount;
 	std::ofstream _out;
-
 };
+
+bool g_comments = false;
+bool g_center = false;
+
+void usage() 
+{
+	std::cout << std::endl << "This program converts CityGML files to a VRML97 representation" << std::endl;
+	std::cout << "More info & updates on http://code.google.com/p/libcitygml" << std::endl;
+	std::cout << "Version built on " << __DATE__ << " at " << __TIME__ << std::endl << std::endl;
+	std::cout << " Usage: citygml2vrml [-optimize] [-comments] [-center] <input.gml> <output.wrl>" << std::endl; 
+	std::cout << " Options:" << std::endl;
+	std::cout << "  -optimize   Merge geometries & polygons with similar properties to" << std::endl
+			  << "              reduce file & scene size" << std::endl;
+	std::cout << "  -comments   Add comments about the object ids to the VRML file" << std::endl;
+	std::cout << "  -center     Center the model around the first encountered points" << std::endl
+			  << "              (may be use to reduce z-fighting artifacts)" << std::endl;
+	exit( -1 );
+}
 
 int main( int argc, char **argv )
 {
 	std::cout << "citygml2vrml v.0.1 (c) 2010 Joachim Pouderoux, BRGM" << std::endl;
 
-	if ( argc < 3 ) 
-	{
-		std::cout << std::endl << "This program converts CityGML files to a VRML97 representation" << std::endl;
-		std::cout << "More info & updates on http://code.google.com/p/libcitygml" << std::endl;
-		std::cout << "Version built on " << __DATE__ << " at " << __TIME__ << std::endl << std::endl;
-		std::cout << "\tUsage: citygml2vrml [-optimize] <inputfile.gml> <outputfile.wrl>" << std::endl; 
-		std::cout << "\tOptions:" << std::endl;
-		std::cout << "\t -optimize   Merge geometries & polygons with similar properties to reduce file & scene size" << std::endl;
-		return -1;
-	}
+	if ( argc < 3 ) usage();
 
 	int fargc = 1;
 
 	bool optimize = false;
+	
+	for ( int i = 1; i < argc; i++ ) 
+	{
+		if ( std::string( argv[i] ) == "-optimize" ) { optimize = true; fargc = i+1; }
+		if ( std::string( argv[i] ) == "-comments" ) { g_comments = true; fargc = i+1; }
+		if ( std::string( argv[i] ) == "-center" ) { g_center = true; fargc = i+1; }
+	}
 
-	if ( std::string( argv[1] ) == "-optimize" ) { optimize = true; fargc++; }
+	if ( argc - fargc < 2 ) usage();
 
 	std::cout << "Parsing CityGML file " << argv[fargc] << "..." << std::endl;
 
@@ -105,7 +118,6 @@ int main( int argc, char **argv )
 	if ( !city ) return NULL;
 
 	std::cout << "Done in " << difftime( end, start ) << " seconds." << std::endl << city->size() << " city objects read." << std::endl;
-
 
 	std::cout << "Converting the city objects to VRML97..." << std::endl;
 
@@ -160,7 +172,7 @@ void VRML97Converter::dumpCityObject( const citygml::CityObject* object )
 {
 	if ( !object || object->size() == 0 ) return;
 
-	addComment(  object->getTypeAsString() + ": " + object->getId() );
+	if ( g_comments ) addComment(  object->getTypeAsString() + ": " + object->getId() );
 
 	beginGroup();	
 
@@ -173,18 +185,24 @@ void VRML97Converter::dumpGeometry( const citygml::CityObject* object, const cit
 {
 	if ( !g ) return;
 
-	addComment( "Geometry: " + g->getId() );
+	if ( g_comments ) addComment( "Geometry: " + g->getId() );
 
 	for ( unsigned int i = 0; i < g->size(); i++ ) dumpPolygon( object, g, (*g)[i] );
 }
 
 void VRML97Converter::dumpPolygon( const citygml::CityObject* object, const citygml::Geometry* g, const citygml::Polygon* p )
 {
+	static bool s_isFirstVert = true;
+	static TVec3d s_firstVert;
+
 	if ( !p || p->getIndices().size() == 0 ) return;
 
-	std::stringstream ss;
-	ss << "  " << p->size() << " points & " << p->getIndices().size() << " triangles & " << p->getNormals().size() << " normals & " << p->getTexCoords().size() << " texCoords";
-	addComment( "Polygon: " + p->getId() + ss.str() );
+	if ( g_comments ) 
+	{
+		std::stringstream ss;
+		ss << "  " << p->getVertices().size() << " points, " << p->getIndices().size()/3 << " triangles, " << p->getNormals().size() << " normals, " << p->getTexCoords().size() << " texCoords";
+		addComment( "Polygon: " + p->getId() + ss.str() );
+	}
 
 	beginNode( "Shape" );
 
@@ -193,18 +211,25 @@ void VRML97Converter::dumpPolygon( const citygml::CityObject* object, const city
 	beginAttributeNode( "geometry", "IndexedFaceSet" );
 
 	{
+		const std::vector<TVec3d>& vertices = p->getVertices();
 		beginAttributeNode( "coord", "Coordinate" );
-
 		beginAttributeArray( "point" );
 		printIndent();
-		for ( unsigned int k = 0; k < p->size(); k++ ) _out << (*p)[k] << ", ";
+		if ( !g_center )
+		{
+			for ( unsigned int k = 0; k < vertices.size(); k++ ) _out << vertices[k] << ", ";
+		}
+		else 
+		{
+			if ( s_isFirstVert ) { s_firstVert = vertices[0]; s_isFirstVert = false; }
+			for ( unsigned int k = 0; k < vertices.size(); k++ ) _out << ( vertices[k] - s_firstVert ) << ", ";
+		}
+
 		_out << std::endl;
 		endAttributeArray();
-
 		endNode();
 	}
 
-	if ( p->getIndices().size() > 0 )
 	{
 		const std::vector<unsigned int>& indices = p->getIndices();
 		beginAttributeArray( "coordIndex" );
@@ -233,7 +258,7 @@ void VRML97Converter::dumpPolygon( const citygml::CityObject* object, const city
 
 	// Texture coordinates
 
-	if ( p->getTexCoords().size() > 0 )
+	if ( dynamic_cast<const citygml::Texture*>( p->getAppearance() ) && p->getTexCoords().size() > 0 )
 	{
 		const citygml::TexCoords& texCoords = p->getTexCoords();
 		beginAttributeNode( "texCoord", "TextureCoordinate" );
