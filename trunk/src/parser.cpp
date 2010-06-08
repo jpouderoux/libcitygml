@@ -155,7 +155,7 @@ namespace citygml
 	{
 	public:
 
-		CityGMLHandler( CityObjectsTypeMask objectsMask = COT_All, unsigned int minLOD = 0, unsigned int maxLOD = 4, bool optimize = true, bool pruneEmptyObjects = true, bool tesselate = true );
+		CityGMLHandler( const std::string& objectsMask = "All", unsigned int minLOD = 0, unsigned int maxLOD = 4, bool optimize = true, bool pruneEmptyObjects = true, bool tesselate = true );
 
 		~CityGMLHandler( void );
 
@@ -292,12 +292,13 @@ namespace citygml
 	std::map<std::string, CityGMLNodeType> CityGMLHandler::s_cityGMLNodeTypeMap;
 	std::vector< std::string > CityGMLHandler::s_knownNamespace;
 
-	CityGMLHandler::CityGMLHandler( CityObjectsTypeMask objectsMask, unsigned int minLOD, unsigned int maxLOD, bool optimize, bool pruneEmptyObjects, bool tesselate ) 
+	CityGMLHandler::CityGMLHandler( const std::string& objectsMask, unsigned int minLOD, unsigned int maxLOD, bool optimize, bool pruneEmptyObjects, bool tesselate ) 
 		: _tesselate( tesselate ), _model( NULL ), _currentCityObject( NULL ), 
 		_currentGeometry( NULL ), _currentPolygon( NULL ), _currentRing( NULL ),  _currentGeometryType( GT_Unknown ),
-		_currentAppearance( NULL ), _objectsMask( objectsMask ), _minLOD( minLOD ), _maxLOD( maxLOD ), _currentLOD( minLOD ), 
+		_currentAppearance( NULL ), _minLOD( minLOD ), _maxLOD( maxLOD ), _currentLOD( minLOD ), 
 		_optimize( optimize ), _pruneEmptyObjects( pruneEmptyObjects ), _filterNodeType( false ), _filterDepth( 0 ), _exterior( true )
 	{ 
+		_objectsMask = getCityObjectsTypeMaskFromString( objectsMask );
 		cityGMLInit(); 
 	}
 
@@ -935,7 +936,7 @@ namespace citygml
 
 	// Parsing methods
 
-	CityModel* load( std::istream& stream, CityObjectsTypeMask objectsMask, unsigned int minLOD, unsigned int maxLOD, bool optimize, bool pruneEmptyObjects, bool tessalate )
+	CityModel* load( std::istream& stream, const std::string& objectsMask, unsigned int minLOD, unsigned int maxLOD, bool optimize, bool pruneEmptyObjects, bool tessalate )
 	{
 		try 
 		{
@@ -983,7 +984,7 @@ namespace citygml
 		return model;
 	}
 
-	CityModel* load( const std::string& fname, CityObjectsTypeMask objectsMask, unsigned int minLOD, unsigned int maxLOD, bool optimize, bool pruneEmptyObjects, bool tessalate )
+	CityModel* load( const std::string& fname, const std::string& objectsMask, unsigned int minLOD, unsigned int maxLOD, bool optimize, bool pruneEmptyObjects, bool tessalate )
 	{
 		std::ifstream file;
 		file.open( fname.c_str(), std::ifstream::in );

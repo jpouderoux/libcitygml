@@ -44,7 +44,7 @@ public:
         supportsExtension( "citygml", "CityGML format" );
 
 		supportsOption( "names", "Add the name of the city objects on top of them" );
-		supportsOption( "objectsMask", "Set the objects mask" );
+		supportsOption( "mask", "Set the objects mask" );
 		supportsOption( "minLOD", "Minimum LOD level to fetch" );
 		supportsOption( "maxLOD", "Maximum LOD level to fetch" );
 		supportsOption( "optimize", "Optimize the geometries & polygons of the CityGML model to reduce the number of instanced objects" );
@@ -60,7 +60,7 @@ private:
 	{
 	public:
 		Settings( void ) : _printNames( false ),
-			_objectsMask( citygml::COT_All ), _minLOD( 1 ), _maxLOD( 4 ),
+			_mask( "All" ), _minLOD( 1 ), _maxLOD( 4 ),
 			_optimize( false ), _pruneEmptyObjects( false ) {}
 
 		void parseOptions( const osgDB::ReaderWriter::Options* )
@@ -72,7 +72,7 @@ private:
 			{
 				std::transform( currentOption.begin(), currentOption.end(), currentOption.begin(), tolower );
 				if ( currentOption == "names" ) _printNames = true;
-				else if ( currentOption == "objectsmask" ) { int i; iss >> i; _objectsMask = i; }
+				else if ( currentOption == "mask" ) { iss >> _mask; }
 				else if ( currentOption == "minlod" ) iss >> _minLOD;
 				else if ( currentOption == "maxlod" ) iss >> _maxLOD;
 				else if ( currentOption == "optimize" ) _optimize = true;
@@ -82,7 +82,7 @@ private:
 
 	public:
 		bool _printNames;
-		citygml::CityObjectsTypeMask _objectsMask;
+		std::string _mask;
 		unsigned int _minLOD;
 		unsigned int _maxLOD;
 		bool _optimize;
@@ -124,7 +124,7 @@ osgDB::ReaderWriter::ReadResult ReaderWriterCityGML::readNode( const std::string
 
 	osg::notify(osg::NOTICE) << "Parsing CityGML file " << fileName << "..." << std::endl;
 
-	citygml::CityModel *city = citygml::load( fileName, settings._objectsMask, settings._minLOD, settings._maxLOD, settings._optimize, settings._pruneEmptyObjects );
+	citygml::CityModel *city = citygml::load( fileName, settings._mask, settings._minLOD, settings._maxLOD, settings._optimize, settings._pruneEmptyObjects );
 	
 	if ( !city ) return NULL;
 
