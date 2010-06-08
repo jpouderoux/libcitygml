@@ -102,7 +102,7 @@ void usage()
 
 int main( int argc, char **argv )
 {
-	std::cout << "citygml2vrml v.0.1 (c) 2010 Joachim Pouderoux, BRGM" << std::endl;
+	std::cout << "citygml2vrml v.0.1.2 (c) 2010 Joachim Pouderoux, BRGM" << std::endl;
 
 	if ( argc < 3 ) usage();
 
