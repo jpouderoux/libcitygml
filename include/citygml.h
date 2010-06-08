@@ -25,9 +25,9 @@
 
 #define LIBCITYGML_VERSION_MAJOR 0
 #define LIBCITYGML_VERSION_MINOR 1
+#define LIBCITYGML_VERSION_REVISION 2
 
-#define MAKE_VERSION(a, b) #a "." #b
-#define LIBCITYGML_VERSIONSTR MAKE_VERSION(LIBCITYGML_VERSION_MAJOR, LIBCITYGML_VERSION_MINOR)
+#define LIBCITYGML_VERSIONSTR "0.1.2"
 
 #if defined( _MSC_VER ) && defined( LIBCITYGML_DYNAMIC )
 #	ifdef LIBCITYGML_BUILD
@@ -77,11 +77,20 @@ namespace citygml
 	///////////////////////////////////////////////////////////////////////////////
 	// Parsing routines
 
-	LIBCITYGML_EXPORT CityModel* load( std::istream& stream, CityObjectsTypeMask objectsMask = COT_All, 
+	// Parameters:
+	// objectsMask: a string describing the objects types that must or must not be parsed
+	//    examples: "All&~LandUse&~TINRelief" to parse everything but landuses and TIN reliefs
+	//              "Road&Railway" to parse only roads & railways
+	// minLOD: the minimal LOD that will be parsed
+	// maxLOD: the maximal LOD that will be parsed
+	// optimize: merge geometries & polygons that share the same appearance in the same object in order to reduce the global hierarchy
+	// pruneEmptyObjects: remove the objects which do not contains any geometrical entity
+	// tesselate: convert the interior & exteriors polygons to triangles
+	LIBCITYGML_EXPORT CityModel* load( std::istream& stream, const std::string& objectsMask = "All", 
 		unsigned int minLOD = 0, unsigned int maxLOD = 4, 
 		bool optimize = true, bool pruneEmptyObjects = true, bool tesselate = true );
 
-	LIBCITYGML_EXPORT CityModel* load( const std::string& fileName, CityObjectsTypeMask objectsMask = COT_All, 
+	LIBCITYGML_EXPORT CityModel* load( const std::string& fileName, const std::string& objectsMask = "All", 
 		unsigned int minLOD = 0, unsigned int maxLOD = 4, 
 		bool optimize = true, bool pruneEmptyObjects = true, bool tesselate = true );
 
@@ -385,6 +394,8 @@ namespace citygml
 	///////////////////////////////////////////////////////////////////////////////
 
 	std::string getCityObjectsClassName( CityObjectsTypeMask mask );
+
+	CityObjectsTypeMask getCityObjectsTypeMaskFromString( const std::string& stringMask );
 
 	class CityObject : public Object 
 	{

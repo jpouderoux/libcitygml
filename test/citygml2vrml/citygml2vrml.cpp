@@ -39,6 +39,8 @@ private:
 
 	// VRML97 Helpers
 
+	inline void addHeader() { _out << "#VRML V2.0 utf8" << std::endl; }
+
 	inline void printIndent() { for ( int i = 0; i < _indentCount; i++ ) _out << "\t"; }
 
 	inline void addComment(const std::string& cmt) {  printIndent(); _out << "# " << cmt << std::endl; }
@@ -76,17 +78,25 @@ void usage()
 {
 	std::cout << std::endl << "This program converts CityGML files to a VRML97 representation" << std::endl;
 	std::cout << "More info & updates on http://code.google.com/p/libcitygml" << std::endl;
-	std::cout << "Version built on " << __DATE__ << " at " << __TIME__ << std::endl << std::endl;
-	std::cout << " Usage: citygml2vrml [-options ...] <input.gml> <output.wrl>" << std::endl; 
+	std::cout << "Version built on " << __DATE__ << " at " << __TIME__ << " with libcitygml v." << LIBCITYGML_VERSIONSTR << std::endl << std::endl;
+	std::cout << " Usage: citygml2vrml [-options...] <input.gml> <output.wrl>" << std::endl; 
 	std::cout << " Options:" << std::endl;
-	std::cout << "  -optimize        Merge geometries & polygons with similar properties to" << std::endl
-			  << "                   reduce file & scene size" << std::endl;
-	std::cout << "  -comments        Add comments about the object ids to the VRML file" << std::endl;
-	std::cout << "  -center          Center the model around the first encountered points" << std::endl
-			  << "                   (may be use to reduce z-fighting artifacts)" << std::endl;
-	std::cout << "  -filter <mask>   CityGML objects to parse (default is all:-1)" << std::endl;
-	std::cout << "  -minLOD <level>  Minimum LOD level to parse (default:0)" << std::endl;
-	std::cout << "  -maxLOD <level>  Maximum LOD level to parse (default:4)" << std::endl;
+	std::cout << "  -optimize       Merge geometries & polygons with similar properties to" << std::endl
+		<< "                  reduce file & scene size" << std::endl;
+	std::cout << "  -comments       Add comments about the object ids to the VRML file" << std::endl;
+	std::cout << "  -center         Center the model around the first encountered points" << std::endl
+		<< "                  (may be use to reduce z-fighting artifacts)" << std::endl;
+	std::cout << "  -filter <mask>  CityGML objects to parse (default:All)" << std::endl
+		<< "                  The mask is composed of: GenericCityObject, Building, Room" << std::endl
+		<< "                  BuildingInstallation, BuildingFurniture, CityFurniture, Track" << std::endl
+		<< "                  Road, Railway, Square, PlantCover, SolitaryVegetationObject," << std::endl
+		<< "                  WaterBody, TINRelief, LandUse, All" << std::endl
+		<< "                  and seperators |,&,~." << std::endl
+		<< "                  Examples:" << std::endl
+		<< "                  \"All&~Track&~Room\" to parse everything but tracks & rooms" << std::endl
+		<< "                  \"Road&Railway\" to parse only roads & railways" << std::endl;
+	std::cout << "  -minLOD <level> Minimum LOD level to parse (default:0)" << std::endl;
+	std::cout << "  -maxLOD <level> Maximum LOD level to parse (default:4)" << std::endl;
 	exit( -1 );
 }
 
@@ -99,10 +109,10 @@ int main( int argc, char **argv )
 	int fargc = 1;
 
 	bool optimize = false;
-	int filter = -1;
+	std::string filter = "All";
 	int minLOD = 0;
 	int maxLOD = 4;
-	
+
 	for ( int i = 1; i < argc; i++ ) 
 	{
 		std::string param = std::string( argv[i] );
@@ -110,7 +120,7 @@ int main( int argc, char **argv )
 		if ( param == "-optimize" ) { optimize = true; fargc = i+1; }
 		if ( param == "-comments" ) { g_comments = true; fargc = i+1; }
 		if ( param == "-center" ) { g_center = true; fargc = i+1; }
-		if ( param == "-filter" ) { if ( i == argc - 1 ) usage(); filter = atoi( argv[i+1] ); i++; fargc = i+1; }
+		if ( param == "-filter" ) { if ( i == argc - 1 ) usage(); filter = argv[i+1]; i++; fargc = i+1; }
 		if ( param == "-minLOD" ) { if ( i == argc - 1 ) usage(); minLOD = atoi( argv[i+1] ); i++; fargc = i+1; }
 		if ( param == "-maxLOD" ) { if ( i == argc - 1 ) usage(); maxLOD = atoi( argv[i+1] ); i++; fargc = i+1; }
 	}
@@ -154,8 +164,9 @@ bool VRML97Converter::convert( const std::string& outFilename )
 
 	if ( _out.fail() ) { std::cerr << "Unable to create file " << outFilename << "!" << std::endl; return false; }
 
-	_out << "#VRML V2.0 utf8" << std::endl;
-	_out << "# Converted from a CityGML model using citygml2vrml (http://code.google.com/p/libcitygml)" << std::endl << std::endl;
+	addHeader();
+
+	addComment( "# Converted from a CityGML model using citygml2vrml (http://code.google.com/p/libcitygml)\n" );
 
 	const citygml::CityObjectsMap& cityObjectsMap = _cityModel->getCityObjectsMap();
 
@@ -308,7 +319,7 @@ void VRML97Converter::dumpPolygon( const citygml::CityObject* object, const city
 			endNode();
 			colorset = true;
 		}
-		
+
 		if ( const citygml::Texture* t = dynamic_cast<const citygml::Texture*>( mat ) ) 
 		{
 			beginAttributeNode( "texture", "ImageTexture" );

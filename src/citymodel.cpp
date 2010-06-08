@@ -22,6 +22,7 @@
 #include "GL/glu.h"
 #include "citygml.h"
 
+#include <algorithm>
 #include <iterator>
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -470,6 +471,67 @@ namespace citygml
 		if ( s != "" ) s.erase( s.length() - 1, 1 ); // remove the last | char
 		return s;
 	};
+
+	// std::string tokenizer helper
+	std::vector<std::string> tokenize( const std::string& str, const std::string& delimiters = ",|& " )
+	{
+		std::vector<std::string> tokens;
+		std::string::size_type lastPos = str.find_first_not_of( delimiters, 0 );
+		std::string::size_type pos = str.find_first_of( delimiters, lastPos );
+
+		while ( std::string::npos != pos || std::string::npos != lastPos )
+		{
+			tokens.push_back( str.substr( lastPos, pos - lastPos ) );
+			lastPos = str.find_first_not_of( delimiters, pos );
+			pos = str.find_first_of( delimiters, lastPos );
+		}
+		return tokens;
+	}
+
+	inline bool caseInsensitiveStringCompare( const std::string& str1, const std::string& str2 ) 
+	{
+		std::string s1( str1 );
+		std::transform( s1.begin(), s1.end(), s1.begin(), ::tolower );	
+		std::string s2( str2 );
+		std::transform( s2.begin(), s2.end(), s2.begin(), ::tolower );
+		return ( s1 == s2 );
+	}
+
+	CityObjectsTypeMask getCityObjectsTypeMaskFromString( const std::string& stringMask ) 
+	{
+		CityObjectsTypeMask mask = 0;
+
+		std::vector<std::string> tokens = tokenize( stringMask );
+
+#define COMPARECITYNAMEMASK( _t_ ) {\
+	bool neg = ( tokens[i][0] == '~' || tokens[i][0] == '!' );\
+	if ( caseInsensitiveStringCompare( #_t_, neg ? tokens[i].substr(1) : tokens[i] ) ) { mask = neg ? ( mask & (~ COT_ ## _t_ )) : ( mask | COT_ ## _t_ );}\
+	}
+
+		for ( unsigned int i = 0; i < tokens.size(); i++ ) 
+		{
+			if ( tokens[i].length() == 0 ) continue;
+
+			COMPARECITYNAMEMASK( GenericCityObject );
+			COMPARECITYNAMEMASK( Building );
+			COMPARECITYNAMEMASK( Room );
+			COMPARECITYNAMEMASK( BuildingInstallation );
+			COMPARECITYNAMEMASK( BuildingFurniture );
+			COMPARECITYNAMEMASK( CityFurniture );
+			COMPARECITYNAMEMASK( Track );				 
+			COMPARECITYNAMEMASK( Road );				 
+			COMPARECITYNAMEMASK( Railway );
+			COMPARECITYNAMEMASK( Square	);				 
+			COMPARECITYNAMEMASK( PlantCover	);
+			COMPARECITYNAMEMASK( SolitaryVegetationObject );
+			COMPARECITYNAMEMASK( WaterBody );
+			COMPARECITYNAMEMASK( TINRelief );					 
+			COMPARECITYNAMEMASK( LandUse );
+			COMPARECITYNAMEMASK( All );					
+		}
+#undef COMPARECITYNAMEMASK
+		return mask;
+	}
 
 	void CityObject::finish( AppearanceManager& appearanceManager, bool optimize ) 
 	{
