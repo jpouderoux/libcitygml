@@ -4,11 +4,15 @@ Last version: 0.1.2
 
 citygml2vrml v.0.1 (c) 2010 Joachim Pouderoux, BRGM
 
-This program converts CityGML files to a VRML97 representation
+citygml2vrml is a command line utility to convert CityGML files to a VRML97 representation.
 
-
- Usage: citygml2vrml [-options ...] <input.gml> <output.wrl>
- Options:
+== Usage ==
+{{{
+ citygml2vrml [-options ...] <input.gml> <output.wrl>
+}}}
+ 
+== Options ==
+{{{
   -optimize       Merge geometries & polygons with similar properties to
                   reduce file & scene size
   -comments       Add comments about the object ids to the VRML file
@@ -25,3 +29,4 @@ This program converts CityGML files to a VRML97 representation
                   "Road&Railway" to parse only roads & railways
   -minLOD <level> Minimum LOD level to parse (default:0)
   -maxLOD <level> Maximum LOD level to parse (default:4)
+}}}
