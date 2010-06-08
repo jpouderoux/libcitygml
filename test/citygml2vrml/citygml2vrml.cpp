@@ -17,6 +17,7 @@
 #include <iostream>
 #include <fstream>
 #include <time.h> 
+#include <algorithm>
 #include "citygml.h"
 
 // VRML97 Helper class to produce a hierarchy of VRML nodes with attributes 
@@ -76,13 +77,16 @@ void usage()
 	std::cout << std::endl << "This program converts CityGML files to a VRML97 representation" << std::endl;
 	std::cout << "More info & updates on http://code.google.com/p/libcitygml" << std::endl;
 	std::cout << "Version built on " << __DATE__ << " at " << __TIME__ << std::endl << std::endl;
-	std::cout << " Usage: citygml2vrml [-optimize] [-comments] [-center] <input.gml> <output.wrl>" << std::endl; 
+	std::cout << " Usage: citygml2vrml [-options ...] <input.gml> <output.wrl>" << std::endl; 
 	std::cout << " Options:" << std::endl;
-	std::cout << "  -optimize   Merge geometries & polygons with similar properties to" << std::endl
-			  << "              reduce file & scene size" << std::endl;
-	std::cout << "  -comments   Add comments about the object ids to the VRML file" << std::endl;
-	std::cout << "  -center     Center the model around the first encountered points" << std::endl
-			  << "              (may be use to reduce z-fighting artifacts)" << std::endl;
+	std::cout << "  -optimize        Merge geometries & polygons with similar properties to" << std::endl
+			  << "                   reduce file & scene size" << std::endl;
+	std::cout << "  -comments        Add comments about the object ids to the VRML file" << std::endl;
+	std::cout << "  -center          Center the model around the first encountered points" << std::endl
+			  << "                   (may be use to reduce z-fighting artifacts)" << std::endl;
+	std::cout << "  -filter <mask>   CityGML objects to parse (default is all:-1)" << std::endl;
+	std::cout << "  -minLOD <level>  Minimum LOD level to parse (default:0)" << std::endl;
+	std::cout << "  -maxLOD <level>  Maximum LOD level to parse (default:4)" << std::endl;
 	exit( -1 );
 }
 
@@ -95,12 +99,20 @@ int main( int argc, char **argv )
 	int fargc = 1;
 
 	bool optimize = false;
+	int filter = -1;
+	int minLOD = 0;
+	int maxLOD = 4;
 	
 	for ( int i = 1; i < argc; i++ ) 
 	{
-		if ( std::string( argv[i] ) == "-optimize" ) { optimize = true; fargc = i+1; }
-		if ( std::string( argv[i] ) == "-comments" ) { g_comments = true; fargc = i+1; }
-		if ( std::string( argv[i] ) == "-center" ) { g_center = true; fargc = i+1; }
+		std::string param = std::string( argv[i] );
+		std::transform( param.begin(), param.end(), param.begin(), tolower );
+		if ( param == "-optimize" ) { optimize = true; fargc = i+1; }
+		if ( param == "-comments" ) { g_comments = true; fargc = i+1; }
+		if ( param == "-center" ) { g_center = true; fargc = i+1; }
+		if ( param == "-filter" ) { if ( i == argc - 1 ) usage(); filter = atoi( argv[i+1] ); i++; fargc = i+1; }
+		if ( param == "-minLOD" ) { if ( i == argc - 1 ) usage(); minLOD = atoi( argv[i+1] ); i++; fargc = i+1; }
+		if ( param == "-maxLOD" ) { if ( i == argc - 1 ) usage(); maxLOD = atoi( argv[i+1] ); i++; fargc = i+1; }
 	}
 
 	if ( argc - fargc < 2 ) usage();
@@ -110,7 +122,7 @@ int main( int argc, char **argv )
 	time_t start;
 	time( &start );
 
-	citygml::CityModel *city = citygml::load( argv[fargc], citygml::COT_All, 0, 4, optimize );
+	citygml::CityModel *city = citygml::load( argv[fargc], filter, minLOD, maxLOD, optimize );
 
 	time_t end;
 	time( &end );
