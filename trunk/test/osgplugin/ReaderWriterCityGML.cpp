@@ -41,7 +41,7 @@ class ReaderWriterCityGML : public osgDB::ReaderWriter
 public:
 	ReaderWriterCityGML( void )
 	{ 
-        supportsExtension( "citygml", "CityGML format" );
+		supportsExtension( "citygml", "CityGML format" );
 
 		supportsOption( "names", "Add the name of the city objects on top of them" );
 		supportsOption( "mask", "Set the objects mask" );
@@ -52,7 +52,7 @@ public:
 	}
 
 	virtual const char* className( void ) const { return "CityGML Reader"; }
-	
+
 	virtual ReadResult readNode( const std::string&, const osgDB::ReaderWriter::Options* ) const;
 
 private:
@@ -125,13 +125,13 @@ osgDB::ReaderWriter::ReadResult ReaderWriterCityGML::readNode( const std::string
 	osg::notify(osg::NOTICE) << "Parsing CityGML file " << fileName << "..." << std::endl;
 
 	citygml::CityModel *city = citygml::load( fileName, settings._mask, settings._minLOD, settings._maxLOD, settings._optimize, settings._pruneEmptyObjects );
-	
+
 	if ( !city ) return NULL;
 
 	osg::notify(osg::NOTICE) << city->size() << " city objects read." << std::endl;
-	
+
 	osg::notify(osg::NOTICE) << "Creation of the OSG city objects' geometry..." << std::endl;
-	
+
 	const citygml::CityObjectsMap& cityObjectsMap = city->getCityObjectsMap();
 
 	citygml::CityObjectsMap::const_iterator it = cityObjectsMap.begin();
@@ -148,13 +148,13 @@ osgDB::ReaderWriter::ReadResult ReaderWriterCityGML::readNode( const std::string
 		const citygml::CityObjects& v = it->second;
 
 		osg::notify(osg::NOTICE) << " Creation of " << v.size() << " " << citygml::getCityObjectsClassName( it->first ) << ( ( v.size() > 1 ) ? "s" : "" ) << "..." << std::endl;
-		
+
 		osg::Group* grp = new osg::Group;
 		grp->setName( citygml::getCityObjectsClassName( it->first ) );
 		root->addChild( grp );
-		
+
 		for ( unsigned int i = 0; i < v.size(); i++ )
-		
+
 			createCityObject( v[i], settings, grp ) )		
 	}
 #else
@@ -162,14 +162,14 @@ osgDB::ReaderWriter::ReadResult ReaderWriterCityGML::readNode( const std::string
 	const citygml::CityObjects& roots = _cityModel->getCityObjectsRoots();
 
 	for ( unsigned int i = 0; i < city->roots.size(); i++ ) 
-	
+
 		createCityObject( roots[i], settings, root );
 #endif
 
 	osg::notify(osg::NOTICE) << "Done." << std::endl;
 
 	delete city;
-	
+
 	// Restore cout/cerr streams
 	std::cout.rdbuf( coutsb );
 	std::cerr.rdbuf( cerrsb );
@@ -193,15 +193,15 @@ bool ReaderWriterCityGML::createCityObject( citygml::CityObject* object, Setting
 #else
 	parent->addChild( geode )
 #endif
-	//osg::notify(osg::NOTICE) << "Creating object " << object->getId() << std::endl;
+		//osg::notify(osg::NOTICE) << "Creating object " << object->getId() << std::endl;
 
-	// Get the default color for the whole city object
-	osg::ref_ptr<osg::Vec4Array> shared_colors = new osg::Vec4Array;
-    shared_colors->push_back( osg::Vec4( object->getDefaultColor().r, object->getDefaultColor().g, object->getDefaultColor().b, 1.f ) );
+		// Get the default color for the whole city object
+		osg::ref_ptr<osg::Vec4Array> shared_colors = new osg::Vec4Array;
+	shared_colors->push_back( osg::Vec4( object->getDefaultColor().r, object->getDefaultColor().g, object->getDefaultColor().b, 1.f ) );
 
 	osg::ref_ptr<osg::Vec4Array> roof_color = new osg::Vec4Array;
-    roof_color->push_back( osg::Vec4( 0.9f, 0.1f, 0.1f, 1.0f ) );
-	
+	roof_color->push_back( osg::Vec4( 0.9f, 0.1f, 0.1f, 1.0f ) );
+
 	for ( unsigned int i = 0; i < object->size(); i++ ) 
 	{
 		const citygml::Geometry& geometry = *object->getGeometry( i );
@@ -210,11 +210,11 @@ bool ReaderWriterCityGML::createCityObject( citygml::CityObject* object, Setting
 		{
 			const citygml::Polygon* p = geometry[j];
 			if ( !p || !p->getIndices() || p->getIndicesSize() == 0 ) continue;
-			
+
 			// Geometry management
 
 			osg::Geometry* geom = new osg::Geometry();
-			
+
 			// Vertices
 			osg::Vec3Array* vertices = new osg::Vec3Array;
 			const std::vector<TVec3d>& vert = p->getVertices();
@@ -238,14 +238,14 @@ bool ReaderWriterCityGML::createCityObject( citygml::CityObject* object, Setting
 				indices->push_back( ind[ i * 3 + 2 ] );	
 			}
 			geom->addPrimitiveSet( indices );
-			
+
 			// Normals			
 			osg::ref_ptr<osg::Vec3Array> normals = new osg::Vec3Array;
 			const std::vector<TVec3f>& norm = p->getNormals();
 			triangles->reserve( norm.size() );
 			for ( unsigned int k = 0; k < norm->size(); k++ )
 				normals->push_back( osg::Vec3( norm[k].x, norm[k].y, norm[k].z ) );
-			
+
 			geom->setNormalArray( normals.get() );
 			geom->setNormalBinding( osg::Geometry::BIND_PER_VERTEX );
 
@@ -256,7 +256,7 @@ bool ReaderWriterCityGML::createCityObject( citygml::CityObject* object, Setting
 			const citygml::Appearance *mat = p->getAppearance();
 
 			bool colorset = false;
- 
+
 			if ( mat )
 			{
 				shared_colors->clear();
@@ -270,7 +270,7 @@ bool ReaderWriterCityGML::createCityObject( citygml::CityObject* object, Setting
 					TVec4f emissive( m->getEmissive(), 0.f );
 					TVec4f specular( m->getSpecular(), 0.f );
 					float ambient = m->getAmbientIntensity();
-										
+
 					osg::Material* material = new osg::Material;
 					material->setColorMode( osg::Material::OFF );
 					material->setDiffuse( osg::Material::FRONT_AND_BACK, TOVEC4( diffuse ) );
@@ -280,7 +280,7 @@ bool ReaderWriterCityGML::createCityObject( citygml::CityObject* object, Setting
 					material->setAmbient( osg::Material::FRONT_AND_BACK, osg::Vec4( ambient, ambient, ambient, 1.0 ) );
 					stateset->setAttributeAndModes( material, osg::StateAttribute::OVERRIDE | osg::StateAttribute::ON );
 					stateset->setMode( GL_LIGHTING, osg::StateAttribute::OVERRIDE | osg::StateAttribute::ON );
-					
+
 					colorset = true;
 				}
 				else if ( const citygml::Texture* t = dynamic_cast<const citygml::Texture*>( mat ) ) 
@@ -332,7 +332,7 @@ bool ReaderWriterCityGML::createCityObject( citygml::CityObject* object, Setting
 						osg::notify(osg::NOTICE) << "  Warning: Texture coordinates not found for poly " << p->getId() << std::endl;
 				}
 			}
-		
+
 			// Color management
 
 			geom->setColorArray( ( !colorset && geometry.getType() == citygml::GT_Roof ) ? roof_color.get() : shared_colors.get() );
@@ -369,7 +369,7 @@ bool ReaderWriterCityGML::createCityObject( citygml::CityObject* object, Setting
 
 #ifdef RECURSIVE_DUMP
 	for ( unsigned int i = 0; i < object->getChildCount(); i++ ) 
-	
+
 		createCityObject( object->getChild(i), settings, grp );
 #endif
 

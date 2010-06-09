@@ -1,17 +1,17 @@
 /* -*-c++-*- libcitygml - Copyright (c) 2010 Joachim Pouderoux, BRGM
- *
- * This file is part of libcitygml library
- * http://code.google.com/p/libcitygml
- *
- * libcitygml is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation, either version 2.1 of the License, or
- * (at your option) any later version.
- *
- * libcitygml is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
+*
+* This file is part of libcitygml library
+* http://code.google.com/p/libcitygml
+*
+* libcitygml is free software: you can redistribute it and/or modify
+* it under the terms of the GNU Lesser General Public License as published by
+* the Free Software Foundation, either version 2.1 of the License, or
+* (at your option) any later version.
+*
+* libcitygml is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU Lesser General Public License for more details.
 */
 
 #ifndef __CITYGML_H__
@@ -40,10 +40,10 @@
 #endif
 
 #ifdef USE_ELKANO_TYPES
-	typedef elk::Vec3d TVec3d;
-	typedef elk::Vec3f TVec3f;
-	typedef elk::Vec2f TVec2f;
-	typedef elk::Vec4f TVec4f;
+typedef elk::Vec3d TVec3d;
+typedef elk::Vec3f TVec3f;
+typedef elk::Vec2f TVec2f;
+typedef elk::Vec4f TVec4f;
 #else
 #	include "vecs.h"
 #endif
@@ -54,24 +54,24 @@ namespace citygml
 	class CityModel;
 
 	typedef enum {
-		COT_GenericCityObject			= 1 << 0,
-		COT_Building					= 1 << 1,
-		COT_Room						= 1 << 2,
-		COT_BuildingInstallation		= 1 << 3,
-		COT_BuildingFurniture			= 1 << 4,
+		COT_GenericCityObject           = 1 << 0,
+		COT_Building                    = 1 << 1,
+		COT_Room                        = 1 << 2,
+		COT_BuildingInstallation        = 1 << 3,
+		COT_BuildingFurniture           = 1 << 4,
 		COT_Door                        = 1 << 5,
-		COT_Window						= 1 << 6,
-		COT_CityFurniture				= 1 << 7,
-		COT_Track						= 1 << 8,
-		COT_Road						= 1 << 9,
-		COT_Railway						= 1 << 10,
-		COT_Square						= 1 << 11,
-		COT_PlantCover					= 1 << 12,
-		COT_SolitaryVegetationObject	= 1 << 13,
-		COT_WaterBody					= 1 << 14,
-		COT_TINRelief					= 1 << 15,
-		COT_LandUse						= 1 << 16,
-		COT_All							= 0xFFFFFF
+		COT_Window                      = 1 << 6,
+		COT_CityFurniture               = 1 << 7,
+		COT_Track                       = 1 << 8,
+		COT_Road                        = 1 << 9,
+		COT_Railway                     = 1 << 10,
+		COT_Square                      = 1 << 11,
+		COT_PlantCover                  = 1 << 12,
+		COT_SolitaryVegetationObject    = 1 << 13,
+		COT_WaterBody                   = 1 << 14,
+		COT_TINRelief                   = 1 << 15,
+		COT_LandUse                     = 1 << 16,
+		COT_All                         = 0xFFFFFF
 	} CityObjectsType;
 
 	typedef unsigned int CityObjectsTypeMask;
@@ -304,7 +304,7 @@ namespace citygml
 
 		// Get the vertices
 		inline const std::vector<TVec3d>& getVertices( void ) const { return _vertices; }
-		
+
 		// Get the indices
 		inline const std::vector<unsigned int>& getIndices( void ) const { return _indices; }
 
@@ -335,7 +335,7 @@ namespace citygml
 		std::vector<unsigned int> _indices;
 
 		Appearance* _appearance;
-		
+
 		TexCoords _texCoords; 
 
 		LinearRing* _exteriorRing;
@@ -457,20 +457,20 @@ namespace citygml
 	class _name_ : public CityObject \
 	{\
 	public:\
-		_name_( const std::string& id ) : CityObject( id, COT_ ## _name_ ) {}\
-		inline TVec4f getDefaultColor( void ) const { return _defcolor_; }\
+	_name_( const std::string& id ) : CityObject( id, COT_ ## _name_ ) {}\
+	inline TVec4f getDefaultColor( void ) const { return _defcolor_; }\
 	};
 
 	///////////////////////////////////////////////////////////////////////////////
 
 	DECLARE_SIMPLE_OBJECT_CLASS( Building, MAKE_RGB( 186, 184, 135 ) );
-	
+
 	DECLARE_SIMPLE_OBJECT_CLASS( Room, MAKE_RGB( 181, 180, 163 ) );
 
 	DECLARE_SIMPLE_OBJECT_CLASS( Door, MAKE_RGB( 145, 53, 13 ) );
 
 	DECLARE_SIMPLE_OBJECT_CLASS( Window, MAKE_RGBA( 147, 170, 209, 60 ) );
-	
+
 	DECLARE_SIMPLE_OBJECT_CLASS( BuildingInstallation, MAKE_RGB( 186, 186, 177 ) );
 
 	DECLARE_SIMPLE_OBJECT_CLASS( BuildingFurniture, MAKE_RGB( 227, 225, 157 ) );
@@ -480,15 +480,15 @@ namespace citygml
 	DECLARE_SIMPLE_OBJECT_CLASS( WaterBody, MAKE_RGB( 48, 133, 187 ) );
 
 	DECLARE_SIMPLE_OBJECT_CLASS( PlantCover, MAKE_RGB( 0, 184, 0 ) );
-	
+
 	DECLARE_SIMPLE_OBJECT_CLASS( SolitaryVegetationObject, MAKE_RGB( 10, 184, 10 ) );
-	
+
 	DECLARE_SIMPLE_OBJECT_CLASS( Track, MAKE_RGB( 171, 131, 46 ) );
-	
+
 	DECLARE_SIMPLE_OBJECT_CLASS( Road, MAKE_RGB( 159, 159, 159 ) );
-	
+
 	DECLARE_SIMPLE_OBJECT_CLASS( Railway, MAKE_RGB( 180, 180, 180 ) );
-	
+
 	DECLARE_SIMPLE_OBJECT_CLASS( Square, MAKE_RGB( 159, 159, 159 ) );
 
 	DECLARE_SIMPLE_OBJECT_CLASS( TINRelief, MAKE_RGB( 100, 230, 10 ) );
