@@ -91,7 +91,7 @@ private:
 	};
 
 private:
-	osg::Geode* createCityObject( citygml::CityObject*, Settings& ) const;
+	bool createCityObject( citygml::CityObject*, Settings&, osg::Group* ) const;
 };
 
 // Register with Registry to instantiate the above reader/writer.
@@ -139,6 +139,10 @@ osgDB::ReaderWriter::ReadResult ReaderWriterCityGML::readNode( const std::string
 	osg::Group* root = new osg::Group();
 	root->setName( fileName );
 
+#define RECURSIVE_DUMP
+
+#ifndef RECURSIVE_DUMP
+
 	for ( ; it != cityObjectsMap.end(); it++ )
 	{
 		const citygml::CityObjects& v = it->second;
@@ -147,14 +151,20 @@ osgDB::ReaderWriter::ReadResult ReaderWriterCityGML::readNode( const std::string
 		
 		osg::Group* grp = new osg::Group;
 		grp->setName( citygml::getCityObjectsClassName( it->first ) );
+		root->addChild( grp );
 		
 		for ( unsigned int i = 0; i < v.size(); i++ )
-		{
-			if ( osg::Geode* geode = createCityObject( v[i], settings ) )
-				grp->addChild( geode );
-		}
-		root->addChild( grp );
+		
+			createCityObject( v[i], settings, grp ) )		
 	}
+#else
+
+	const citygml::CityObjects& roots = _cityModel->getCityObjectsRoots();
+
+	for ( unsigned int i = 0; i < city->roots.size(); i++ ) 
+	
+		createCityObject( roots[i], settings, root );
+#endif
 
 	osg::notify(osg::NOTICE) << "Done." << std::endl;
 
@@ -167,14 +177,22 @@ osgDB::ReaderWriter::ReadResult ReaderWriterCityGML::readNode( const std::string
 	return root;
 }
 
-osg::Geode* ReaderWriterCityGML::createCityObject( citygml::CityObject* object, Settings& settings ) const
+bool ReaderWriterCityGML::createCityObject( citygml::CityObject* object, Settings& settings, osg::Group* parent ) const
 {
 	// Skip objects without geometry
-	if ( !object || object->size() == 0 ) return NULL;
+	if ( !object || !parent ) return false;
 
 	osg::ref_ptr<osg::Geode> geode = new osg::Geode;
 	geode->setName( object->getId() );
-	
+
+#ifdef RECURSIVE_DUMP
+	osg::Group* grp = new osg::Group;
+	grp->setName( object->getId() );
+	grp->addChild( geode );
+	parent->addChild( grp );
+#else
+	parent->addChild( geode )
+#endif
 	//osg::notify(osg::NOTICE) << "Creating object " << object->getId() << std::endl;
 
 	// Get the default color for the whole city object
@@ -349,5 +367,11 @@ osg::Geode* ReaderWriterCityGML::createCityObject( citygml::CityObject* object, 
 		geode->addDrawable( text.get() );
 	}
 
-	return geode.release();
+#ifdef RECURSIVE_DUMP
+	for ( unsigned int i = 0; i < object->getChildCount(); i++ ) 
+	
+		createCityObject( object->getChild(i), settings, grp );
+#endif
+
+	return true;
 }
