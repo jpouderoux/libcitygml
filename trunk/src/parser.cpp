@@ -21,7 +21,7 @@
 
 #include "citygml.h"
 
-//#define XERCES_STATIC_LIBRARY
+#define XERCES_STATIC_LIBRARY
 
 #include <xercesc/util/XMLString.hpp>
 #include <xercesc/parsers/SAXParser.hpp>
@@ -80,6 +80,8 @@ namespace citygml
 		// bldg
 		NODETYPE( Building ),
 		NODETYPE( Room ),
+		NODETYPE( Door ),
+		NODETYPE( Window ),
 		NODETYPE( BuildingInstallation ),
 		NODETYPE( address ),
 		NODETYPE( measuredHeight ),
@@ -150,6 +152,8 @@ namespace citygml
 		NODETYPE( ambientIntensity )
 	};
 
+	inline std::string wstos( const XMLCh* const wstr );
+
 	// CityGML SAX parsing handler
 	class CityGMLHandler : public xercesc::HandlerBase 
 	{
@@ -174,7 +178,7 @@ namespace citygml
 
 		virtual void fatalError( const xercesc::SAXParseException& e ) 
 		{
-			std::cerr << "Fatal error while parsing CityGML file: " << e.getMessage() << std::endl;
+			std::cerr << "Fatal error while parsing CityGML file: " << wstos( e.getMessage() ) << std::endl;
 			std::cerr << "  Full path was: " << getFullPath() << std::endl;
 		}
 
@@ -349,6 +353,8 @@ namespace citygml
 		// bldg
 		INSERTNODETYPE( Building );
 		INSERTNODETYPE( Room );
+		INSERTNODETYPE( Door );
+		INSERTNODETYPE( Window );
 		INSERTNODETYPE( BuildingInstallation );
 		INSERTNODETYPE( address );
 		INSERTNODETYPE( measuredHeight );
@@ -565,6 +571,8 @@ namespace citygml
 			MANAGE_OBJECT( Room );
 			MANAGE_OBJECT( BuildingInstallation );
 			MANAGE_OBJECT( BuildingFurniture );
+			MANAGE_OBJECT( Door );
+			MANAGE_OBJECT( Window );
 			MANAGE_OBJECT( CityFurniture );
 			MANAGE_OBJECT( Track );
 			MANAGE_OBJECT( Road );
@@ -574,13 +582,14 @@ namespace citygml
 			MANAGE_OBJECT( SolitaryVegetationObject );
 			MANAGE_OBJECT( WaterBody );
 			MANAGE_OBJECT( TINRelief );
-			MANAGE_OBJECT( LandUse );
+			MANAGE_OBJECT( LandUse );			
 #undef MANAGE_OBJECT
 
 			// BoundarySurfaceType
 #define MANAGE_SURFACETYPE( _t_ ) case CG_ ## _t_ ## Surface : _currentGeometryType = GT_ ## _t_; break;
 			MANAGE_SURFACETYPE( Wall );
 			MANAGE_SURFACETYPE( Roof );
+
 			MANAGE_SURFACETYPE( Ground );
 			MANAGE_SURFACETYPE( Closure );
 			MANAGE_SURFACETYPE( Floor );
@@ -697,6 +706,8 @@ namespace citygml
 		case NODETYPE( Room ):
 		case NODETYPE( BuildingInstallation ):
 		case NODETYPE( BuildingFurniture ):
+		case NODETYPE( Door ):
+		case NODETYPE( Window ):
 		case NODETYPE( CityFurniture ):
 		case NODETYPE( Track ):
 		case NODETYPE( Road ):
@@ -708,10 +719,12 @@ namespace citygml
 		case NODETYPE( TINRelief ):
 		case NODETYPE( LandUse ):
 			MODEL_FILTER();
-			if ( _currentCityObject && ( _currentCityObject->size() > 0 || !_pruneEmptyObjects ) ) // Prune empty objects 
+			if ( _currentCityObject && ( _currentCityObject->size() > 0 || !_pruneEmptyObjects ) ) 
+			{	// Prune empty objects 
 				_model->addCityObject( _currentCityObject );
+				if ( _cityObjectStack.size() == 1 ) _model->addCityObjectAsRoot( _currentCityObject );
+			}
 			else delete _currentCityObject; 
-			//	_currentCityObject = NULL; 
 			popCityObject();
 			_filterNodeType = false;
 			break;

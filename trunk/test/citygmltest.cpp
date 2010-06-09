@@ -4,6 +4,8 @@
 #include <algorithm>
 #include "citygml.h"
 
+void analyzeObject( const citygml::CityObject*, unsigned int );
+
 void usage() 
 {
 	std::cout << "Usage: citygmltest [-log] [-filter <mask>] <filename>" << std::endl;
@@ -62,6 +64,7 @@ int main( int argc, char **argv )
 
 	std::cout << "Analyzing the city objects..." << std::endl;
 
+
 	const citygml::CityObjectsMap& cityObjectsMap = city->getCityObjectsMap();
 
 	citygml::CityObjectsMap::const_iterator it = cityObjectsMap.begin();
@@ -84,7 +87,26 @@ int main( int argc, char **argv )
 		}
 	}
 
+	if ( log ) 
+	{
+		std::cout << std::endl << "Objects hierarchy:" << std::endl;
+		const citygml::CityObjects& roots = city->getCityObjectsRoots();
+
+		for ( unsigned int i = 0; i < roots.size(); i++ )
+
+			analyzeObject( roots[ i ], 2 );
+	}
+
 	std::cout << "Done." << std::endl;
 
 	return 0;
+}
+
+void analyzeObject( const citygml::CityObject* object, unsigned int indent )
+{
+	for ( unsigned int i = 0; i < indent; i++ ) std::cout << " ";
+		std::cout << "Object " << citygml::getCityObjectsClassName( object->getType() ) << ": " << object->getId() << std::endl;
+
+	for ( unsigned int i = 0; i < object->getChildCount(); i++ )
+		analyzeObject( object->getChild(i), indent+1 );
 }

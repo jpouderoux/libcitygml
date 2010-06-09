@@ -87,10 +87,12 @@ void usage()
 	std::cout << "  -center         Center the model around the first encountered points" << std::endl
 		<< "                  (may be use to reduce z-fighting artifacts)" << std::endl;
 	std::cout << "  -filter <mask>  CityGML objects to parse (default:All)" << std::endl
-		<< "                  The mask is composed of: GenericCityObject, Building, Room" << std::endl
-		<< "                  BuildingInstallation, BuildingFurniture, CityFurniture, Track" << std::endl
-		<< "                  Road, Railway, Square, PlantCover, SolitaryVegetationObject," << std::endl
-		<< "                  WaterBody, TINRelief, LandUse, All" << std::endl
+		<< "                  The mask is composed of:" << std::endl
+		<< "                   GenericCityObject, Building, Room," << std::endl
+		<< "                   BuildingInstallation, BuildingFurniture, Door, Window, " << std::endl
+		<< "                   CityFurniture, Track, Road, Railway, Square, PlantCover," << std::endl
+		<< "                   SolitaryVegetationObject, WaterBody, TINRelief, LandUse," << std::endl
+		<< "                   All" << std::endl
 		<< "                  and seperators |,&,~." << std::endl
 		<< "                  Examples:" << std::endl
 		<< "                  \"All&~Track&~Room\" to parse everything but tracks & rooms" << std::endl
@@ -141,6 +143,8 @@ int main( int argc, char **argv )
 
 	std::cout << "Done in " << difftime( end, start ) << " seconds." << std::endl << city->size() << " city objects read." << std::endl;
 
+	std::cout << city->getCityObjectsRoots().size() << " root nodes" << std::endl;
+
 	std::cout << "Converting the city objects to VRML97..." << std::endl;
 
 	VRML97Converter converter( city );
@@ -168,6 +172,9 @@ bool VRML97Converter::convert( const std::string& outFilename )
 
 	addComment( "# Converted from a CityGML model using citygml2vrml (http://code.google.com/p/libcitygml)\n" );
 
+#define RECURSIVE_DUMP
+
+#ifndef RECURSIVE_DUMP
 	const citygml::CityObjectsMap& cityObjectsMap = _cityModel->getCityObjectsMap();
 
 	citygml::CityObjectsMap::const_iterator it = cityObjectsMap.begin();
@@ -185,6 +192,13 @@ bool VRML97Converter::convert( const std::string& outFilename )
 
 		endGroup();
 	}
+#else
+	const citygml::CityObjects& roots = _cityModel->getCityObjectsRoots();
+
+	for ( unsigned int i = 0; i < roots.size(); i++ )
+
+		dumpCityObject( roots[i] );
+#endif
 
 	_out.close();
 
@@ -200,6 +214,14 @@ void VRML97Converter::dumpCityObject( const citygml::CityObject* object )
 	beginGroup();	
 
 	for ( unsigned int i = 0; i < object->size(); i++ ) dumpGeometry( object, object->getGeometry( i ) );
+
+#ifdef RECURSIVE_DUMP
+
+	for ( unsigned int i = 0; i < object->getChildCount(); i++ )
+
+		dumpCityObject( object->getChild(i) );
+
+#endif
 
 	endGroup();
 }
@@ -279,6 +301,8 @@ void VRML97Converter::dumpPolygon( const citygml::CityObject* object, const city
 		addAttributeValue( "normalPerVertex", "TRUE" );
 	}
 
+	addAttributeValue( "solid", "FALSE" ); //draw both sides of faces
+
 	// Texture coordinates
 
 	if ( dynamic_cast<const citygml::Texture*>( p->getAppearance() ) && p->getTexCoords().size() > 0 )
@@ -332,10 +356,12 @@ void VRML97Converter::dumpPolygon( const citygml::CityObject* object, const city
 		{
 			beginAttributeNode( "material", "Material" );
 
-			TVec3f color( object->getDefaultColor().rgba );
+			TVec4f color( object->getDefaultColor().rgba );
 			if ( g->getType() == citygml::GT_Roof )
-				color = TVec3f( 0.9f, 0.1f, 0.1f );
-			addAttributeValue( "diffuseColor", (TVec3f&)color );
+				color = TVec4f( 0.9f, 0.1f, 0.1f, 1.f );
+			TVec3f crgb( color.r, color.g, color.b );
+			addAttributeValue( "diffuseColor", crgb );
+			if ( color.a != 1.f  ) addAttributeValue( "transparency", 1.f - color.a );
 
 			endNode();
 		}

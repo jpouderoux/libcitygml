@@ -456,6 +456,8 @@ namespace citygml
 		GETCITYNAME( Room );
 		GETCITYNAME( BuildingInstallation );
 		GETCITYNAME( BuildingFurniture );
+		GETCITYNAME( Door );
+		GETCITYNAME( Window );
 		GETCITYNAME( CityFurniture );
 		GETCITYNAME( Track );
 		GETCITYNAME( Road );
@@ -517,6 +519,8 @@ namespace citygml
 			COMPARECITYNAMEMASK( Room );
 			COMPARECITYNAMEMASK( BuildingInstallation );
 			COMPARECITYNAMEMASK( BuildingFurniture );
+			COMPARECITYNAMEMASK( Door );
+			COMPARECITYNAMEMASK( Window );
 			COMPARECITYNAMEMASK( CityFurniture );
 			COMPARECITYNAMEMASK( Track );				 
 			COMPARECITYNAMEMASK( Road );				 
