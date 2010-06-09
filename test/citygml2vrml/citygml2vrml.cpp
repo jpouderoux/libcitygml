@@ -24,20 +24,17 @@
 class VRML97Converter 
 {
 public:
-
 	VRML97Converter( citygml::CityModel* city ) : _cityModel( city ), _indentCount( 0 ) {}
 
 	bool convert( const std::string& outFilename );
 
 private:
-
 	void dumpCityObject( const citygml::CityObject* );
 
 	void dumpGeometry( const citygml::CityObject*, const citygml::Geometry* );
 
 	void dumpPolygon( const citygml::CityObject*, const citygml::Geometry*, const citygml::Polygon* );
 
-	// VRML97 Helpers
 
 	inline void addHeader() { _out << "#VRML V2.0 utf8" << std::endl; }
 
@@ -79,7 +76,7 @@ void usage()
 	std::cout << std::endl << "This program converts CityGML files to a VRML97 representation" << std::endl;
 	std::cout << "More info & updates on http://code.google.com/p/libcitygml" << std::endl;
 	std::cout << "Version built on " << __DATE__ << " at " << __TIME__ << " with libcitygml v." << LIBCITYGML_VERSIONSTR << std::endl << std::endl;
-	std::cout << " Usage: citygml2vrml [-options...] <input.gml> <output.wrl>" << std::endl; 
+	std::cout << " Usage: citygml2vrml [-options...] <input.gml> [output.wrl]" << std::endl; 
 	std::cout << " Options:" << std::endl;
 	std::cout << "  -optimize       Merge geometries & polygons with similar properties to" << std::endl
 		<< "                  reduce file & scene size" << std::endl;
@@ -106,8 +103,6 @@ int main( int argc, char **argv )
 {
 	std::cout << "citygml2vrml v.0.1.2 (c) 2010 Joachim Pouderoux, BRGM" << std::endl;
 
-	if ( argc < 3 ) usage();
-
 	int fargc = 1;
 
 	bool optimize = false;
@@ -127,8 +122,8 @@ int main( int argc, char **argv )
 		if ( param == "-maxLOD" ) { if ( i == argc - 1 ) usage(); maxLOD = atoi( argv[i+1] ); i++; fargc = i+1; }
 	}
 
-	if ( argc - fargc < 2 ) usage();
-
+	if ( argc - fargc < 1 ) usage();
+	
 	std::cout << "Parsing CityGML file " << argv[fargc] << "..." << std::endl;
 
 	time_t start;
@@ -144,12 +139,20 @@ int main( int argc, char **argv )
 	std::cout << "Done in " << difftime( end, start ) << " seconds." << std::endl << city->size() << " city objects read." << std::endl;
 
 	std::cout << city->getCityObjectsRoots().size() << " root nodes" << std::endl;
-
-	std::cout << "Converting the city objects to VRML97..." << std::endl;
+	
+	std::string outfile;
+	if ( argc - fargc == 1 ) 
+	{
+		outfile = argv[fargc];
+		outfile = outfile.substr(0, outfile.find_last_of(".")) + ".wrl";
+	}
+	else outfile = argv[fargc+1];
+	
+	std::cout << "Converting the city model to VRML97 file " << outfile << "..." << std::endl;
 
 	VRML97Converter converter( city );
 
-	if ( converter.convert( argv[fargc+1] ) )
+	if ( converter.convert( outfile ) )
 		std::cout << "Done." << std::endl;
 	else 
 		std::cout << "Failed!" << std::endl;
