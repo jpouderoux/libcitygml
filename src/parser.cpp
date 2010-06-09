@@ -719,7 +719,7 @@ namespace citygml
 		case NODETYPE( TINRelief ):
 		case NODETYPE( LandUse ):
 			MODEL_FILTER();
-			if ( _currentCityObject && ( _currentCityObject->size() > 0 || !_pruneEmptyObjects ) ) 
+			if ( _currentCityObject && ( _currentCityObject->size() > 0 || _currentCityObject->getChildCount() > 0 || !_pruneEmptyObjects ) ) 
 			{	// Prune empty objects 
 				_model->addCityObject( _currentCityObject );
 				if ( _cityObjectStack.size() == 1 ) _model->addCityObjectAsRoot( _currentCityObject );
