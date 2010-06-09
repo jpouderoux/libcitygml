@@ -5,7 +5,7 @@ Last version: *citygml2vrml v.0.1.2*
 
 == Usage ==
 {{{
- citygml2vrml [-options ...] <input.gml> <output.wrl>
+ citygml2vrml [-options ...] <input.gml> [output.wrl]
 }}}
  
 == Options ==
@@ -16,13 +16,15 @@ Last version: *citygml2vrml v.0.1.2*
   -center         Center the model around the first encountered points
                   (may be use to reduce z-fighting artifacts)
   -filter <mask>  CityGML objects to parse (default:All)
-                  The mask is composed of: GenericCityObject, Building, Room
-                  BuildingInstallation, BuildingFurniture, CityFurniture, Track
-                  Road, Railway, Square, PlantCover, SolitaryVegetationObject,
-                  WaterBody, TINRelief, LandUse, All
+                  The mask is composed of:
+                   GenericCityObject, Building, Room,
+                   BuildingInstallation, BuildingFurniture, Door, Window,
+                   CityFurniture, Track, Road, Railway, Square, PlantCover,
+                   SolitaryVegetationObject, WaterBody, TINRelief, LandUse,
+                   All
                   and seperators |,&,~.
                   Examples:
-                  "All&~Track&~Room" to parse everything but track & rooms
+                  "All&~Track&~Room" to parse everything but tracks & rooms
                   "Road&Railway" to parse only roads & railways
   -minLOD <level> Minimum LOD level to parse (default:0)
   -maxLOD <level> Maximum LOD level to parse (default:4)
