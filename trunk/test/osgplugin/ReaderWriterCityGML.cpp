@@ -72,7 +72,7 @@ private:
 			{
 				std::transform( currentOption.begin(), currentOption.end(), currentOption.begin(), tolower );
 				if ( currentOption == "names" ) _printNames = true;
-				else if ( currentOption == "mask" ) { iss >> _mask; }
+				else if ( currentOption == "mask" ) iss >> _mask;
 				else if ( currentOption == "minlod" ) iss >> _minLOD;
 				else if ( currentOption == "maxlod" ) iss >> _maxLOD;
 				else if ( currentOption == "optimize" ) _optimize = true;
@@ -91,7 +91,7 @@ private:
 	};
 
 private:
-	bool createCityObject( citygml::CityObject*, Settings&, osg::Group* ) const;
+	bool createCityObject( const citygml::CityObject*, Settings&, osg::Group* ) const;
 };
 
 // Register with Registry to instantiate the above reader/writer.
@@ -132,16 +132,16 @@ osgDB::ReaderWriter::ReadResult ReaderWriterCityGML::readNode( const std::string
 
 	osg::notify(osg::NOTICE) << "Creation of the OSG city objects' geometry..." << std::endl;
 
-	const citygml::CityObjectsMap& cityObjectsMap = city->getCityObjectsMap();
-
-	citygml::CityObjectsMap::const_iterator it = cityObjectsMap.begin();
-
 	osg::Group* root = new osg::Group();
 	root->setName( fileName );
 
 #define RECURSIVE_DUMP
 
 #ifndef RECURSIVE_DUMP
+
+	const citygml::CityObjectsMap& cityObjectsMap = city->getCityObjectsMap();
+
+	citygml::CityObjectsMap::const_iterator it = cityObjectsMap.begin();
 
 	for ( ; it != cityObjectsMap.end(); it++ )
 	{
@@ -159,9 +159,9 @@ osgDB::ReaderWriter::ReadResult ReaderWriterCityGML::readNode( const std::string
 	}
 #else
 
-	const citygml::CityObjects& roots = _cityModel->getCityObjectsRoots();
+	const citygml::CityObjects& roots = city->getCityObjectsRoots();
 
-	for ( unsigned int i = 0; i < city->roots.size(); i++ ) 
+	for ( unsigned int i = 0; i < roots.size(); i++ ) 
 
 		createCityObject( roots[i], settings, root );
 #endif
@@ -177,7 +177,7 @@ osgDB::ReaderWriter::ReadResult ReaderWriterCityGML::readNode( const std::string
 	return root;
 }
 
-bool ReaderWriterCityGML::createCityObject( citygml::CityObject* object, Settings& settings, osg::Group* parent ) const
+bool ReaderWriterCityGML::createCityObject( const citygml::CityObject* object, Settings& settings, osg::Group* parent ) const
 {
 	// Skip objects without geometry
 	if ( !object || !parent ) return false;
@@ -193,10 +193,10 @@ bool ReaderWriterCityGML::createCityObject( citygml::CityObject* object, Setting
 #else
 	parent->addChild( geode )
 #endif
-		//osg::notify(osg::NOTICE) << "Creating object " << object->getId() << std::endl;
+	//osg::notify(osg::NOTICE) << "Creating object " << object->getId() << std::endl;
 
-		// Get the default color for the whole city object
-		osg::ref_ptr<osg::Vec4Array> shared_colors = new osg::Vec4Array;
+	// Get the default color for the whole city object
+	osg::ref_ptr<osg::Vec4Array> shared_colors = new osg::Vec4Array;
 	shared_colors->push_back( osg::Vec4( object->getDefaultColor().r, object->getDefaultColor().g, object->getDefaultColor().b, 1.f ) );
 
 	osg::ref_ptr<osg::Vec4Array> roof_color = new osg::Vec4Array;
@@ -208,8 +208,8 @@ bool ReaderWriterCityGML::createCityObject( citygml::CityObject* object, Setting
 
 		for ( unsigned int j = 0; j < geometry.size(); j++ ) 
 		{
-			const citygml::Polygon* p = geometry[j];
-			if ( !p || !p->getIndices() || p->getIndicesSize() == 0 ) continue;
+			const citygml::Polygon& p = geometry[j];
+			if ( p->getIndices().size() == 0 ) continue;
 
 			// Geometry management
 
@@ -219,7 +219,7 @@ bool ReaderWriterCityGML::createCityObject( citygml::CityObject* object, Setting
 			osg::Vec3Array* vertices = new osg::Vec3Array;
 			const std::vector<TVec3d>& vert = p->getVertices();
 			vertices->reserve( vert.size() );
-			for ( unsigned int k = 0; k < p->size(); k++ )
+			for ( unsigned int k = 0; k < vert.size(); k++ )
 			{
 				osg::Vec3d pt( vert[k][0], vert[k][1], vert[k][2] );
 				vertices->push_back( pt );
@@ -242,8 +242,8 @@ bool ReaderWriterCityGML::createCityObject( citygml::CityObject* object, Setting
 			// Normals			
 			osg::ref_ptr<osg::Vec3Array> normals = new osg::Vec3Array;
 			const std::vector<TVec3f>& norm = p->getNormals();
-			triangles->reserve( norm.size() );
-			for ( unsigned int k = 0; k < norm->size(); k++ )
+			normals->reserve( norm.size() );
+			for ( unsigned int k = 0; k < norm.size(); k++ )
 				normals->push_back( osg::Vec3( norm[k].x, norm[k].y, norm[k].z ) );
 
 			geom->setNormalArray( normals.get() );
