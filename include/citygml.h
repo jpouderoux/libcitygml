@@ -54,21 +54,23 @@ namespace citygml
 	class CityModel;
 
 	typedef enum {
-		COT_GenericCityObject			= 1 << 0,  // 1
-		COT_Building					= 1 << 1,  // 2
-		COT_Room						= 1 << 2,  // 4
-		COT_BuildingInstallation		= 1 << 3,  // 8
-		COT_BuildingFurniture			= 1 << 4,  // 16
-		COT_CityFurniture				= 1 << 5,  // 32
-		COT_Track						= 1 << 6,  // 64
-		COT_Road						= 1 << 7,  // 128
-		COT_Railway						= 1 << 8,  // 256
-		COT_Square						= 1 << 9,  // 512
-		COT_PlantCover					= 1 << 10, // 1024
-		COT_SolitaryVegetationObject	= 1 << 11, // 2048
-		COT_WaterBody					= 1 << 12, // 4096
-		COT_TINRelief					= 1 << 13, // 8192
-		COT_LandUse						= 1 << 14, // 16384
+		COT_GenericCityObject			= 1 << 0,
+		COT_Building					= 1 << 1,
+		COT_Room						= 1 << 2,
+		COT_BuildingInstallation		= 1 << 3,
+		COT_BuildingFurniture			= 1 << 4,
+		COT_Door                        = 1 << 5,
+		COT_Window						= 1 << 6,
+		COT_CityFurniture				= 1 << 7,
+		COT_Track						= 1 << 8,
+		COT_Road						= 1 << 9,
+		COT_Railway						= 1 << 10,
+		COT_Square						= 1 << 11,
+		COT_PlantCover					= 1 << 12,
+		COT_SolitaryVegetationObject	= 1 << 13,
+		COT_WaterBody					= 1 << 14,
+		COT_TINRelief					= 1 << 15,
+		COT_LandUse						= 1 << 16,
 		COT_All							= 0xFFFFFF
 	} CityObjectsType;
 
@@ -431,7 +433,7 @@ namespace citygml
 		// Access the children
 		inline unsigned int getChildCount( void ) const { return _children.size(); }
 
-		inline CityObject* getChild( unsigned int i ) { return _children[i]; }
+		inline const CityObject* getChild( unsigned int i ) const { return _children[i]; }
 
 		inline std::vector< CityObject* >& getChildren( void ) { return _children; }
 
@@ -447,130 +449,51 @@ namespace citygml
 		std::vector< CityObject* > _children;
 	};
 
-#define MAKE_RGB( _r_, _g_, _b_ ) TVec4f( _r_/255.f, _g_/255.f, _b_/255.f, 1.f )
+#define MAKE_RGBA( _r_, _g_, _b_, _a_ ) TVec4f( _r_/255.f, _g_/255.f, _b_/255.f, _a_/255.f )
+#define MAKE_RGB( _r_, _g_, _b_ ) MAKE_RGBA( _r_, _g_, _b_, 255 )
 
-
-	///////////////////////////////////////////////////////////////////////////////
-
-	class Building : public CityObject 
-	{
-	public:
-		Building( const std::string& id ) : CityObject( id, COT_Building ) {}
-
-		inline TVec4f getDefaultColor( void ) const { return MAKE_RGB( 186, 184, 135 ); }
+	// Helper macro to declare a new CityObject type from its name & default color
+#define DECLARE_SIMPLE_OBJECT_CLASS( _name_, _defcolor_ ) \
+	class _name_ : public CityObject \
+	{\
+	public:\
+		_name_( const std::string& id ) : CityObject( id, COT_ ## _name_ ) {}\
+		inline TVec4f getDefaultColor( void ) const { return _defcolor_; }\
 	};
 
 	///////////////////////////////////////////////////////////////////////////////
 
-	class Room : public CityObject 
-	{
-	public:
-		Room( const std::string& id ) : CityObject( id, COT_Room ) {}
+	DECLARE_SIMPLE_OBJECT_CLASS( Building, MAKE_RGB( 186, 184, 135 ) );
+	
+	DECLARE_SIMPLE_OBJECT_CLASS( Room, MAKE_RGB( 181, 180, 163 ) );
 
-		inline TVec4f getDefaultColor( void ) const { return MAKE_RGB( 186, 184, 135 ); }
-	};
+	DECLARE_SIMPLE_OBJECT_CLASS( Door, MAKE_RGB( 145, 53, 13 ) );
 
-	///////////////////////////////////////////////////////////////////////////////
+	DECLARE_SIMPLE_OBJECT_CLASS( Window, MAKE_RGBA( 147, 170, 209, 60 ) );
+	
+	DECLARE_SIMPLE_OBJECT_CLASS( BuildingInstallation, MAKE_RGB( 186, 186, 177 ) );
 
-	class BuildingInstallation : public CityObject 
-	{
-	public:
-		BuildingInstallation( const std::string& id ) : CityObject( id, COT_BuildingInstallation ) {}
+	DECLARE_SIMPLE_OBJECT_CLASS( BuildingFurniture, MAKE_RGB( 227, 225, 157 ) );
 
-		inline TVec4f getDefaultColor( void ) const { return MAKE_RGB( 186, 184, 135 ); }
-	};
+	DECLARE_SIMPLE_OBJECT_CLASS( CityFurniture, MAKE_RGB( 186, 184, 135 ) );
 
-	///////////////////////////////////////////////////////////////////////////////
+	DECLARE_SIMPLE_OBJECT_CLASS( WaterBody, MAKE_RGB( 48, 133, 187 ) );
 
-	class BuildingFurniture : public CityObject 
-	{
-	public:
-		BuildingFurniture( const std::string& id ) : CityObject( id, COT_BuildingFurniture ) {}
+	DECLARE_SIMPLE_OBJECT_CLASS( PlantCover, MAKE_RGB( 0, 184, 0 ) );
+	
+	DECLARE_SIMPLE_OBJECT_CLASS( SolitaryVegetationObject, MAKE_RGB( 10, 184, 10 ) );
+	
+	DECLARE_SIMPLE_OBJECT_CLASS( Track, MAKE_RGB( 171, 131, 46 ) );
+	
+	DECLARE_SIMPLE_OBJECT_CLASS( Road, MAKE_RGB( 159, 159, 159 ) );
+	
+	DECLARE_SIMPLE_OBJECT_CLASS( Railway, MAKE_RGB( 180, 180, 180 ) );
+	
+	DECLARE_SIMPLE_OBJECT_CLASS( Square, MAKE_RGB( 159, 159, 159 ) );
 
-		inline TVec4f getDefaultColor( void ) const { return MAKE_RGB( 186, 184, 135 ); }
-	};
+	DECLARE_SIMPLE_OBJECT_CLASS( TINRelief, MAKE_RGB( 100, 230, 10 ) );
 
-	///////////////////////////////////////////////////////////////////////////////
-
-	class CityFurniture : public CityObject 
-	{
-	public:
-		CityFurniture( const std::string& id ) : CityObject( id, COT_CityFurniture ) {}
-
-		inline TVec4f getDefaultColor( void ) const { return MAKE_RGB( 186, 184, 135 ); }
-	};
-
-	///////////////////////////////////////////////////////////////////////////////
-
-	class WaterBody : public CityObject 
-	{
-	public:
-		WaterBody( const std::string& id ) : CityObject( id, COT_WaterBody ) {}
-
-		inline TVec4f getDefaultColor( void ) const { return MAKE_RGB( 48, 133, 187 ); }
-	};
-
-	///////////////////////////////////////////////////////////////////////////////
-
-	class PlantCover : public CityObject 
-	{
-	public:
-		PlantCover( const std::string& id ) : CityObject( id, COT_PlantCover ) {}
-
-		inline TVec4f getDefaultColor( void ) const { return MAKE_RGB( 0, 184, 0 ); }
-	};
-
-	///////////////////////////////////////////////////////////////////////////////
-
-	class SolitaryVegetationObject : public CityObject 
-	{
-	public:
-		SolitaryVegetationObject( const std::string& id ) : CityObject( id, COT_SolitaryVegetationObject ) {}
-
-		inline TVec4f getDefaultColor( void ) const { return MAKE_RGB( 10, 184, 10 );  }
-	};
-
-	///////////////////////////////////////////////////////////////////////////////
-
-	class Track : public CityObject 
-	{
-	public:
-		Track( const std::string& id ) : CityObject( id, COT_Track ) {}
-
-		inline TVec4f getDefaultColor( void ) const { return MAKE_RGB( 171, 131, 46 ); }
-	};
-
-	///////////////////////////////////////////////////////////////////////////////
-
-	class Road : public CityObject 
-	{
-	public:
-		Road( const std::string& id ) : CityObject( id, COT_Road ) {}
-
-		inline TVec4f getDefaultColor( void ) const { return MAKE_RGB( 159, 159, 159 ); }
-	};
-
-	///////////////////////////////////////////////////////////////////////////////
-
-	class Railway : public CityObject 
-	{
-	public:
-		Railway( const std::string& id ) : CityObject( id, COT_Railway ) {}
-
-		inline TVec4f getDefaultColor( void ) const { return MAKE_RGB( 180, 180, 180 ); }
-	};
-
-	///////////////////////////////////////////////////////////////////////////////
-
-	class Square : public CityObject 
-	{
-	public:
-		Square( const std::string& id ) : CityObject( id, COT_Square ) {}
-
-		inline TVec4f getDefaultColor( void ) const { return MAKE_RGB( 159, 159, 159 ); }
-	};
-
-	///////////////////////////////////////////////////////////////////////////////
+	DECLARE_SIMPLE_OBJECT_CLASS( GenericCityObject, MAKE_RGB( 100, 130, 0 ) );
 
 	class LandUse : public CityObject 
 	{
@@ -595,30 +518,9 @@ namespace citygml
 			return MAKE_RGB( 10, 230, 1 ); 
 		}
 	};
-
 	///////////////////////////////////////////////////////////////////////////////
 
-	class TINRelief : public CityObject 
-	{
-	public:
-		TINRelief( const std::string& id ) : CityObject( id, COT_TINRelief ) {}
-
-		inline TVec4f getDefaultColor( void ) const { return MAKE_RGB( 100, 230, 10 ); }
-	};
-
-	///////////////////////////////////////////////////////////////////////////////
-
-	class GenericCityObject : public CityObject 
-	{
-	public:
-		GenericCityObject( const std::string& id ) : CityObject( id, COT_GenericCityObject ) {}
-
-		inline TVec4f getDefaultColor( void ) const { return MAKE_RGB( 100, 130, 0 ); }
-	};
-
-	///////////////////////////////////////////////////////////////////////////////
-
-	typedef std::vector<citygml::CityObject*> CityObjects;
+	typedef std::vector< CityObject* > CityObjects;
 	typedef std::map< CityObjectsType, CityObjects > CityObjectsMap;
 
 	class CityModel : public Object
@@ -650,13 +552,20 @@ namespace citygml
 			return &it->second; 
 		}
 
+		// Return the roots elements of the model. You can then navigate the hierarchy using object->getChildren().
+		inline const CityObjects& getCityObjectsRoots( void ) const { return _roots; }
+
 	protected:
 		void addCityObject( CityObject* o );
+
+		inline void addCityObjectAsRoot( CityObject* o ) { if ( o ) _roots.push_back( o ); }
 
 		void finish( bool optimize );
 
 	protected:
 		Envelope _envelope;
+
+		CityObjects _roots;
 
 		CityObjectsMap _cityObjectsMap;
 
