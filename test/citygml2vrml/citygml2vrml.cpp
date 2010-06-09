@@ -79,7 +79,7 @@ void usage()
 	std::cout << " Usage: citygml2vrml [-options...] <input.gml> [output.wrl]" << std::endl; 
 	std::cout << " Options:" << std::endl;
 	std::cout << "  -optimize       Merge geometries & polygons with similar properties to" << std::endl
-		<< "                  reduce file & scene size" << std::endl;
+		<< "                  reduce file & scene size (recommended)" << std::endl;
 	std::cout << "  -comments       Add comments about the object ids to the VRML file" << std::endl;
 	std::cout << "  -center         Center the model around the first encountered points" << std::endl
 		<< "                  (may be use to reduce z-fighting artifacts)" << std::endl;
