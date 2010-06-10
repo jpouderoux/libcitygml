@@ -81,8 +81,8 @@ void usage()
 	std::cout << "  -optimize       Merge geometries & polygons with similar properties to" << std::endl
 		<< "                  reduce file & scene size (recommended)" << std::endl;
 	std::cout << "  -comments       Add comments about the object ids to the VRML file" << std::endl;
-	std::cout << "  -center         Center the model around the first encountered points" << std::endl
-		<< "                  (may be use to reduce z-fighting artifacts)" << std::endl;
+	std::cout << "  -center         Center the model around the first encountered point" << std::endl
+		<< "                  (may be used to reduce z-fighting artifacts)" << std::endl;
 	std::cout << "  -filter <mask>  CityGML objects to parse (default:All)" << std::endl
 		<< "                  The mask is composed of:" << std::endl
 		<< "                   GenericCityObject, Building, Room," << std::endl
