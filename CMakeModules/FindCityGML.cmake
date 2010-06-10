@@ -8,7 +8,7 @@
 # correspond to the ./configure --prefix=$CITYGML_DIR
 
 
-FIND_PATH( CITYGML_INCLUDE_DIR CityGMLParser.h
+FIND_PATH( CITYGML_INCLUDE_DIR citygml.h
 	./include
 	../include
 	$ENV{CITYGML_DIR}/include

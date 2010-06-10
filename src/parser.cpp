@@ -21,7 +21,7 @@
 
 #include "citygml.h"
 
-#define XERCES_STATIC_LIBRARY
+//#define XERCES_STATIC_LIBRARY
 
 #include <xercesc/util/XMLString.hpp>
 #include <xercesc/parsers/SAXParser.hpp>
