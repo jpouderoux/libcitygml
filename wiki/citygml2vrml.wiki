@@ -15,7 +15,7 @@ Last version: *citygml2vrml v.0.1.2*
 
   -comments       Add comments about the object ids to the VRML file
 
-  -center         Center the model around the first encountered points
+  -center         Center the model around the first encountered point
                   (may be use to reduce z-fighting artifacts)
 
   -filter <mask>  CityGML objects to parse (default:All)
