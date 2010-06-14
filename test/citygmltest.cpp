@@ -45,12 +45,15 @@ int main( int argc, char **argv )
 	time_t start;
 	time( &start );
 
+	citygml::ParserParams params;
+	params.objectsMask = filter;
+
 #if 0
 	std::ifstream file;
 	file.open( argv[fargc], std::ifstream::in );
 	citygml::CityModel *city = citygml::load( file, filter );
 #else
-	citygml::CityModel *city = citygml::load( argv[fargc], filter );
+	citygml::CityModel *city = citygml::load( argv[fargc], params );
 #endif
 
 	time_t end;
