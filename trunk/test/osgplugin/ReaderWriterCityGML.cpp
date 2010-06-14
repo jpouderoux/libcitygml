@@ -59,9 +59,7 @@ private:
 	class Settings 
 	{
 	public:
-		Settings( void ) : _printNames( false ),
-			_mask( "All" ), _minLOD( 1 ), _maxLOD( 4 ),
-			_optimize( false ), _pruneEmptyObjects( false ) {}
+		Settings( void ) : _printNames( false ) {}
 
 		void parseOptions( const osgDB::ReaderWriter::Options* )
 		{
@@ -72,21 +70,17 @@ private:
 			{
 				std::transform( currentOption.begin(), currentOption.end(), currentOption.begin(), tolower );
 				if ( currentOption == "names" ) _printNames = true;
-				else if ( currentOption == "mask" ) iss >> _mask;
-				else if ( currentOption == "minlod" ) iss >> _minLOD;
-				else if ( currentOption == "maxlod" ) iss >> _maxLOD;
-				else if ( currentOption == "optimize" ) _optimize = true;
-				else if ( currentOption == "pruneemptyobjects" ) _pruneEmptyObjects = true;		
+				else if ( currentOption == "mask" ) iss >> _params.objectsMask;
+				else if ( currentOption == "minlod" ) iss >> _params.minLOD;
+				else if ( currentOption == "maxlod" ) iss >> _params.maxLOD;
+				else if ( currentOption == "optimize" ) _params.optimize = true;
+				else if ( currentOption == "pruneemptyobjects" ) _params.pruneEmptyObjects = true;		
 			}
 		}
 
 	public:
 		bool _printNames;
-		std::string _mask;
-		unsigned int _minLOD;
-		unsigned int _maxLOD;
-		bool _optimize;
-		bool _pruneEmptyObjects;
+		citygml::ParserParams _params;
 		std::map< std::string, osg::Texture2D* > _textureMap;
 	};
 
@@ -124,7 +118,7 @@ osgDB::ReaderWriter::ReadResult ReaderWriterCityGML::readNode( const std::string
 
 	osg::notify(osg::NOTICE) << "Parsing CityGML file " << fileName << "..." << std::endl;
 
-	citygml::CityModel *city = citygml::load( fileName, settings._mask, settings._minLOD, settings._maxLOD, settings._optimize, settings._pruneEmptyObjects );
+	citygml::CityModel *city = citygml::load( fileName, settings._params );
 
 	if ( !city ) return NULL;
 

@@ -89,6 +89,17 @@ SET(LIBRARY_OUTPUT_PATH ${OUTPUT_LIBDIR})
   # SET( CMAKE_BUILD_TYPE "Release" )
 # ENDIF( DEBUG_BUILD )
 
+# xml library
+OPTION(LIBCITYGML_USE_XERCESC "Set to ON to build libcitygml with Xerces-c library." ON)
+OPTION(LIBCITYGML_USE_LIBXML2 "Set to ON to build libcitygml with LibXml2 library." OFF)
+
+IF ( LIBCITYGML_USE_XERCESC )
+	IF( LIBCITYGML_USE_LIBXML2 )
+		MESSAGE("Error: You cannot build the library with Xerces-c AND LibXml2! Xerces library will be used by default.")
+		UNSET( LIBCITYGML_USE_LIBXML2 )
+	ENDIF( LIBCITYGML_USE_LIBXML2 )
+ENDIF( LIBCITYGML_USE_XERCESC )
+
 # core
 ADD_SUBDIRECTORY( src )
 

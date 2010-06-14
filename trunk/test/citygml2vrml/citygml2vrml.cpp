@@ -105,21 +105,18 @@ int main( int argc, char **argv )
 
 	int fargc = 1;
 
-	bool optimize = false;
-	std::string filter = "All";
-	int minLOD = 0;
-	int maxLOD = 4;
+	citygml::ParserParams params;
 
 	for ( int i = 1; i < argc; i++ ) 
 	{
 		std::string param = std::string( argv[i] );
 		std::transform( param.begin(), param.end(), param.begin(), tolower );
-		if ( param == "-optimize" ) { optimize = true; fargc = i+1; }
+		if ( param == "-optimize" ) { params.optimize = true; fargc = i+1; }
 		if ( param == "-comments" ) { g_comments = true; fargc = i+1; }
 		if ( param == "-center" ) { g_center = true; fargc = i+1; }
-		if ( param == "-filter" ) { if ( i == argc - 1 ) usage(); filter = argv[i+1]; i++; fargc = i+1; }
-		if ( param == "-minLOD" ) { if ( i == argc - 1 ) usage(); minLOD = atoi( argv[i+1] ); i++; fargc = i+1; }
-		if ( param == "-maxLOD" ) { if ( i == argc - 1 ) usage(); maxLOD = atoi( argv[i+1] ); i++; fargc = i+1; }
+		if ( param == "-filter" ) { if ( i == argc - 1 ) usage(); params.objectsMask = argv[i+1]; i++; fargc = i+1; }
+		if ( param == "-minLOD" ) { if ( i == argc - 1 ) usage(); params.minLOD = atoi( argv[i+1] ); i++; fargc = i+1; }
+		if ( param == "-maxLOD" ) { if ( i == argc - 1 ) usage(); params.maxLOD = atoi( argv[i+1] ); i++; fargc = i+1; }
 	}
 
 	if ( argc - fargc < 1 ) usage();
@@ -129,7 +126,7 @@ int main( int argc, char **argv )
 	time_t start;
 	time( &start );
 
-	citygml::CityModel *city = citygml::load( argv[fargc], filter, minLOD, maxLOD, optimize );
+	citygml::CityModel *city = citygml::load( argv[fargc], params );
 
 	time_t end;
 	time( &end );
@@ -173,7 +170,7 @@ bool VRML97Converter::convert( const std::string& outFilename )
 
 	addHeader();
 
-	addComment( "# Converted from a CityGML model using citygml2vrml (http://code.google.com/p/libcitygml)\n" );
+	addComment( "Converted from a CityGML model using citygml2vrml (http://code.google.com/p/libcitygml)\n" );
 
 #define RECURSIVE_DUMP
 
@@ -210,7 +207,7 @@ bool VRML97Converter::convert( const std::string& outFilename )
 
 void VRML97Converter::dumpCityObject( const citygml::CityObject* object ) 
 {
-	if ( !object || object->size() == 0 ) return;
+	if ( !object ) return;
 
 	if ( g_comments ) addComment(  object->getTypeAsString() + ": " + object->getId() );
 

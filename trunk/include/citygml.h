@@ -88,13 +88,24 @@ namespace citygml
 	// optimize: merge geometries & polygons that share the same appearance in the same object in order to reduce the global hierarchy
 	// pruneEmptyObjects: remove the objects which do not contains any geometrical entity
 	// tesselate: convert the interior & exteriors polygons to triangles
-	LIBCITYGML_EXPORT CityModel* load( std::istream& stream, const std::string& objectsMask = "All", 
-		unsigned int minLOD = 0, unsigned int maxLOD = 4, 
-		bool optimize = true, bool pruneEmptyObjects = true, bool tesselate = true );
 
-	LIBCITYGML_EXPORT CityModel* load( const std::string& fileName, const std::string& objectsMask = "All", 
-		unsigned int minLOD = 0, unsigned int maxLOD = 4, 
-		bool optimize = true, bool pruneEmptyObjects = true, bool tesselate = true );
+	class ParserParams {
+
+	public:
+		ParserParams( void ) : objectsMask( "All" ), minLOD( 0 ), maxLOD( 4 ), optimize( false ), pruneEmptyObjects( false ), tesselate( true ) { }
+
+	public:
+		std::string objectsMask; 
+		unsigned int minLOD; 
+		unsigned int maxLOD;
+		bool optimize; 
+		bool pruneEmptyObjects; 
+		bool tesselate;
+	};
+
+	LIBCITYGML_EXPORT CityModel* load( std::istream& stream, const ParserParams& params );
+
+	LIBCITYGML_EXPORT CityModel* load( const std::string& fileName, const ParserParams& params );
 
 	///////////////////////////////////////////////////////////////////////////////
 
