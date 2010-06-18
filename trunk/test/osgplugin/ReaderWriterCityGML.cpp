@@ -61,7 +61,7 @@ private:
 	public:
 		Settings( void ) : _printNames( false ) {}
 
-		void parseOptions( const osgDB::ReaderWriter::Options* )
+		void parseOptions( const osgDB::ReaderWriter::Options* options)
 		{
 			if ( !options ) return;
 			std::istringstream iss( options->getOptionString() );
@@ -202,7 +202,7 @@ bool ReaderWriterCityGML::createCityObject( const citygml::CityObject* object, S
 
 		for ( unsigned int j = 0; j < geometry.size(); j++ ) 
 		{
-			const citygml::Polygon& p = geometry[j];
+			const citygml::Polygon* p = geometry[j];
 			if ( p->getIndices().size() == 0 ) continue;
 
 			// Geometry management
