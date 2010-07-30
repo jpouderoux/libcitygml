@@ -115,8 +115,8 @@ int main( int argc, char **argv )
 		if ( param == "-comments" ) { g_comments = true; fargc = i+1; }
 		if ( param == "-center" ) { g_center = true; fargc = i+1; }
 		if ( param == "-filter" ) { if ( i == argc - 1 ) usage(); params.objectsMask = argv[i+1]; i++; fargc = i+1; }
-		if ( param == "-minLOD" ) { if ( i == argc - 1 ) usage(); params.minLOD = atoi( argv[i+1] ); i++; fargc = i+1; }
-		if ( param == "-maxLOD" ) { if ( i == argc - 1 ) usage(); params.maxLOD = atoi( argv[i+1] ); i++; fargc = i+1; }
+		if ( param == "-minlod" ) { if ( i == argc - 1 ) usage(); params.minLOD = atoi( argv[i+1] ); i++; fargc = i+1; }
+		if ( param == "-maxlod" ) { if ( i == argc - 1 ) usage(); params.maxLOD = atoi( argv[i+1] ); i++; fargc = i+1; }
 	}
 
 	if ( argc - fargc < 1 ) usage();
