@@ -12,10 +12,13 @@ void usage()
 	std::cout << " Options:" << std::endl;
 	std::cout << "  -log            Print some informations during parsing" << std::endl;
 	std::cout << "  -filter <mask>  CityGML objects to parse (default:All)" << std::endl
-		<< "                  The mask is composed of: GenericCityObject, Building, Room" << std::endl
-		<< "                  BuildingInstallation, BuildingFurniture, CityFurniture, Track" << std::endl
-		<< "                  Road, Railway, Square, PlantCover, SolitaryVegetationObject," << std::endl
-		<< "                  WaterBody, TINRelief, LandUse, All" << std::endl
+		<< "                  The mask is composed of:" << std::endl
+		<< "                   GenericCityObject, Building, Room," << std::endl
+		<< "                   BuildingInstallation, BuildingFurniture, Door, Window, " << std::endl
+		<< "                   CityFurniture, Track, Road, Railway, Square, PlantCover," << std::endl
+		<< "                   SolitaryVegetationObject, WaterBody, TINRelief, LandUse," << std::endl
+		<< "                   Tunnel, Bridge, BridgeConstructionElement," << std::endl
+		<< "                   BridgeInstallation, BridgePart,  All" << std::endl
 		<< "                  and seperators |,&,~." << std::endl
 		<< "                  Examples:" << std::endl
 		<< "                  \"All&~Track&~Room\" to parse everything but tracks & rooms" << std::endl
