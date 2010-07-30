@@ -1,7 +1,7 @@
 #labels Featured
 *citygml2vrml* is a command line utility to convert CityGML files to a VRML97 representation.
 
-Last version: *citygml2vrml v.0.1.2*
+Last version: *citygml2vrml v.0.1.3*
 
 == Usage ==
 {{{
@@ -24,7 +24,8 @@ Last version: *citygml2vrml v.0.1.2*
                    BuildingInstallation, BuildingFurniture, Door, Window,
                    CityFurniture, Track, Road, Railway, Square, PlantCover,
                    SolitaryVegetationObject, WaterBody, TINRelief, LandUse,
-                   All
+                   Tunnel, Bridge, BridgeConstructionElement,
+                   BridgeInstallation, BridgePart,  All
                   and seperators |,&,~.
                   Examples:
                   "All&~Track&~Room" to parse everything but tracks & rooms
