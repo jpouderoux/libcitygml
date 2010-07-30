@@ -74,6 +74,7 @@ namespace citygml {
 		NODETYPE( address ),
 		NODETYPE( measuredHeight ),
 		NODETYPE( class ),
+		NODETYPE( type ),
 		NODETYPE( function ),
 		NODETYPE( usage ),
 
@@ -114,9 +115,19 @@ namespace citygml {
 		NODETYPE( lod ),
 		NODETYPE( TINRelief ),
 
+		// sub
+		NODETYPE( Tunnel ),
+		NODETYPE( relativeToTerrain ),
+
+		// brid
+		NODETYPE( Bridge ),
+		NODETYPE( BridgeConstructionElement ),
+		NODETYPE( BridgeInstallation ),
+		NODETYPE( BridgePart ),
+
 		// gen
 		NODETYPE( GenericCityObject ),
-
+		
 		// app
 		NODETYPE( SimpleTexture ),	
 		NODETYPE( ParameterizedTexture ),
@@ -207,11 +218,12 @@ void CityGMLHandler::cityGMLInit( void )
 	INSERTNODETYPE( address );
 	INSERTNODETYPE( measuredHeight );
 	INSERTNODETYPE( class );
+	INSERTNODETYPE( type );
 	INSERTNODETYPE( function );
 	INSERTNODETYPE( usage )
 
-		// BoundarySurfaceType
-		INSERTNODETYPE( WallSurface );
+	// BoundarySurfaceType
+	INSERTNODETYPE( WallSurface );
 	INSERTNODETYPE( RoofSurface );
 	INSERTNODETYPE( GroundSurface );
 	INSERTNODETYPE( ClosureSurface );
@@ -246,6 +258,16 @@ void CityGMLHandler::cityGMLInit( void )
 	// dem
 	INSERTNODETYPE( lod );
 	INSERTNODETYPE( TINRelief );
+
+	// sub
+	INSERTNODETYPE( Tunnel );
+	INSERTNODETYPE( relativeToTerrain );
+
+	// brid
+	INSERTNODETYPE( Bridge );
+	INSERTNODETYPE( BridgeConstructionElement );
+	INSERTNODETYPE( BridgeInstallation );
+	INSERTNODETYPE( BridgePart );
 
 	// gen
 	INSERTNODETYPE( GenericCityObject );
@@ -290,7 +312,9 @@ void CityGMLHandler::cityGMLInit( void )
 	INSERTKNOWNNAMESPACE( trans );
 	INSERTKNOWNNAMESPACE( veg );
 	INSERTKNOWNNAMESPACE( wtr );
-	INSERTKNOWNNAMESPACE( tex );	
+	INSERTKNOWNNAMESPACE( tex );
+	INSERTKNOWNNAMESPACE( sub );
+	INSERTKNOWNNAMESPACE( brid );
 }
 
 CityGMLNodeType CityGMLHandler::getNodeTypeFromName( const std::string& name )
@@ -406,7 +430,12 @@ void CityGMLHandler::startElement( const std::string& wlocalname, void* attribut
 		MANAGE_OBJECT( SolitaryVegetationObject );
 		MANAGE_OBJECT( WaterBody );
 		MANAGE_OBJECT( TINRelief );
-		MANAGE_OBJECT( LandUse );			
+		MANAGE_OBJECT( LandUse );		
+		MANAGE_OBJECT( Tunnel );
+		MANAGE_OBJECT( Bridge );
+		MANAGE_OBJECT( BridgeConstructionElement );
+		MANAGE_OBJECT( BridgeInstallation );
+		MANAGE_OBJECT( BridgePart );
 #undef MANAGE_OBJECT
 
 		// BoundarySurfaceType
@@ -542,6 +571,11 @@ void CityGMLHandler::endElement( const std::string& wlocalname )
 	case NODETYPE( WaterBody ):
 	case NODETYPE( TINRelief ):
 	case NODETYPE( LandUse ):
+	case NODETYPE( Tunnel ):
+	case NODETYPE( Bridge ):
+	case NODETYPE( BridgeConstructionElement ):
+	case NODETYPE( BridgeInstallation ):
+	case NODETYPE( BridgePart ):
 		MODEL_FILTER();
 		if ( _currentCityObject && ( _currentCityObject->size() > 0 || _currentCityObject->getChildCount() > 0 || !_params.pruneEmptyObjects ) ) 
 		{	// Prune empty objects 
@@ -588,6 +622,7 @@ void CityGMLHandler::endElement( const std::string& wlocalname )
 		break;
 
 	case NODETYPE( class ):
+	case NODETYPE( type ):
 	case NODETYPE( function ):
 	case NODETYPE( usage ):
 	case NODETYPE( measuredHeight ):

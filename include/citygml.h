@@ -71,6 +71,11 @@ namespace citygml
 		COT_WaterBody                   = 1 << 14,
 		COT_TINRelief                   = 1 << 15,
 		COT_LandUse                     = 1 << 16,
+		COT_Tunnel						= 1 << 17,
+		COT_Bridge						= 1 << 18,
+		COT_BridgeConstructionElement	= 1 << 19,
+		COT_BridgeInstallation			= 1 << 20, 
+		COT_BridgePart                  = 1 << 21,
 		COT_All                         = 0xFFFFFF
 	} CityObjectsType;
 
@@ -503,6 +508,16 @@ namespace citygml
 	DECLARE_SIMPLE_OBJECT_CLASS( Square, MAKE_RGB( 159, 159, 159 ) );
 
 	DECLARE_SIMPLE_OBJECT_CLASS( TINRelief, MAKE_RGB( 100, 230, 10 ) );
+
+	DECLARE_SIMPLE_OBJECT_CLASS( Tunnel, MAKE_RGB( 180, 180, 150 ) );
+
+	DECLARE_SIMPLE_OBJECT_CLASS( Bridge, MAKE_RGB( 245, 30, 30 ) );
+
+	DECLARE_SIMPLE_OBJECT_CLASS( BridgeConstructionElement, MAKE_RGB( 245, 20, 20 ) );
+
+	DECLARE_SIMPLE_OBJECT_CLASS( BridgeInstallation, MAKE_RGB( 245, 80, 80 ) );
+
+	DECLARE_SIMPLE_OBJECT_CLASS( BridgePart, MAKE_RGB( 245, 50, 50 ) );
 
 	DECLARE_SIMPLE_OBJECT_CLASS( GenericCityObject, MAKE_RGB( 100, 130, 0 ) );
 
