@@ -89,7 +89,8 @@ void usage()
 		<< "                   BuildingInstallation, BuildingFurniture, Door, Window, " << std::endl
 		<< "                   CityFurniture, Track, Road, Railway, Square, PlantCover," << std::endl
 		<< "                   SolitaryVegetationObject, WaterBody, TINRelief, LandUse," << std::endl
-		<< "                   All" << std::endl
+		<< "                   Tunnel, Bridge, BridgeConstructionElement," << std::endl
+		<< "                   BridgeInstallation, BridgePart,  All" << std::endl
 		<< "                  and seperators |,&,~." << std::endl
 		<< "                  Examples:" << std::endl
 		<< "                  \"All&~Track&~Room\" to parse everything but tracks & rooms" << std::endl
@@ -101,7 +102,7 @@ void usage()
 
 int main( int argc, char **argv )
 {
-	std::cout << "citygml2vrml v.0.1.2 (c) 2010 Joachim Pouderoux, BRGM" << std::endl;
+	std::cout << "citygml2vrml v." << LIBCITYGML_VERSIONSTR << " (c) 2010 Joachim Pouderoux, BRGM" << std::endl;
 
 	int fargc = 1;
 
