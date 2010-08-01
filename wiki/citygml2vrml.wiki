@@ -38,6 +38,6 @@ Last version: *citygml2vrml v.0.1.3*
 
 == Download ==
 
-The source code of last version of *citygml2vrml* is available on the googlecode SVN repository: [http://code.google.com/p/libcitygml/source/browse/trunk/test/citygml2vrml/citygml2vrml.cpp citygml2vrml.cpp]. 
+The source code of last version of *citygml2vrml* is available on the SVN repository: [http://code.google.com/p/libcitygml/source/browse/trunk/test/citygml2vrml/citygml2vrml.cpp citygml2vrml.cpp]. 
 
 You can download a binary distribution for Windows [http://code.google.com/p/libcitygml/downloads/list here].
