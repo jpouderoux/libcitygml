@@ -1,5 +1,8 @@
 /* -*-c++-*- libcitygml - Copyright (c) 2010 Joachim Pouderoux, BRGM
  *
+ * Contributors:
+ *  - Manuel Garnier, BRGM - better normal computation
+ *
  * This file is part of libcitygml library
  * http://code.google.com/p/libcitygml
  *
@@ -128,18 +131,22 @@ namespace citygml
 	///////////////////////////////////////////////////////////////////////////////
 
 	TVec3f Polygon::computeNormal( void ) 
-	{
-		if ( !_exteriorRing ) 
+	{		
+		if ( _vertices.empty() || _indices.size() < 3 ) 
 		{
-			std::cout << "Warning: Unable to compute normal on polygon " << getId() << "!" << std::endl;
+			//std::cout << "Warning: Unable to compute normal on polygon " << getId() << "!" << std::endl;
 			return TVec3f();
 		}
 
-		TVec3f normal = _exteriorRing->computeNormal();
+		const TVec3d& p1 = _vertices[_indices[0]];
+		const TVec3d& p2 = _vertices[_indices[1]];
+		const TVec3d& p3 = _vertices[_indices[2]];
 
-		if ( _negNormal || normal.z < -0.5 ) normal = -normal;
+		TVec3d normal = ( ( p2 - p1 ).cross( p3 - p1 ) ).normal();
 
-		return normal;
+		if ( _negNormal ) normal = -normal;
+
+		return TVec3f( (float)normal.x, (float)normal.y, (float)normal.z );
 	}
 
 	void Polygon::tesselate( void )
@@ -288,10 +295,8 @@ namespace citygml
 			if ( n.sqrLength() > 0.5 ) break;
 
 			count++;
-		}
-		
+		}		
 		//n.normalEq();
-
 		return TVec3f( (float)n.x, (float)n.y, (float)n.z );
 	}
 
@@ -362,11 +367,11 @@ namespace citygml
 
 	void Polygon::finish( bool doTesselate ) 
 	{
-		TVec3f normal = computeNormal();
-
 		if ( doTesselate ) tesselate();				
 		else mergeRings();
 
+		TVec3f normal = computeNormal();
+		
 		// Save the normal per point field
 		_normals.resize( _vertices.size() );
 		for ( unsigned int i = 0; i < _vertices.size(); i++ )
@@ -689,9 +694,13 @@ namespace citygml
 
 				for ( unsigned int i = 2; i < len; i++ ) 
 				{
-					tess->_indices.push_back( first );
+					if ( tess->_curMode == GL_TRIANGLE_FAN || i%2 == 0 ) tess->_indices.push_back( first );
 					tess->_indices.push_back( prev );
-					if ( tess->_curMode == GL_TRIANGLE_STRIP ) first = prev;
+					if ( tess->_curMode == GL_TRIANGLE_STRIP )
+					{
+						if ( i%2 == 1) tess->_indices.push_back( first );
+						first = prev;
+					}
 					prev = tess->_curIndices[i];
 					tess->_indices.push_back( prev );
 				}
