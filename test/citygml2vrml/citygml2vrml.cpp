@@ -21,12 +21,12 @@
 #include "citygml.h"
 
 // VRML97 Helper class to produce a hierarchy of VRML nodes with attributes 
-class VRML97Converter 
+class VRML97Printer 
 {
 public:
-	VRML97Converter( citygml::CityModel* city ) : _cityModel( city ), _indentCount( 0 ) {}
+	VRML97Printer( citygml::CityModel* city ) : _cityModel( city ), _indentCount( 0 ) {}
 
-	bool convert( const std::string& outFilename );
+	bool save( const std::string& outFilename );
 
 private:
 	void dumpCityObject( const citygml::CityObject* );
@@ -35,7 +35,7 @@ private:
 
 	void dumpPolygon( const citygml::CityObject*, const citygml::Geometry*, const citygml::Polygon* );
 
-
+protected:
 	inline void addHeader() { _out << "#VRML V2.0 utf8" << std::endl; }
 
 	inline void printIndent() { for ( int i = 0; i < _indentCount; i++ ) _out << "\t"; }
@@ -148,9 +148,9 @@ int main( int argc, char **argv )
 	
 	std::cout << "Converting the city model to VRML97 file " << outfile << "..." << std::endl;
 
-	VRML97Converter converter( city );
+	VRML97Printer printer( city );
 
-	if ( converter.convert( outfile ) )
+	if ( printer.save( outfile ) )
 		std::cout << "Done." << std::endl;
 	else 
 		std::cout << "Failed!" << std::endl;
@@ -161,7 +161,7 @@ int main( int argc, char **argv )
 
 // VRML97 city converter
 
-bool VRML97Converter::convert( const std::string& outFilename )
+bool VRML97Printer::save( const std::string& outFilename )
 {
 	if ( !_cityModel ) return false;
 
@@ -206,7 +206,7 @@ bool VRML97Converter::convert( const std::string& outFilename )
 	return true;
 }
 
-void VRML97Converter::dumpCityObject( const citygml::CityObject* object ) 
+void VRML97Printer::dumpCityObject( const citygml::CityObject* object ) 
 {
 	if ( !object ) return;
 
@@ -227,7 +227,7 @@ void VRML97Converter::dumpCityObject( const citygml::CityObject* object )
 	endGroup();
 }
 
-void VRML97Converter::dumpGeometry( const citygml::CityObject* object, const citygml::Geometry* g )
+void VRML97Printer::dumpGeometry( const citygml::CityObject* object, const citygml::Geometry* g )
 {
 	if ( !g ) return;
 
@@ -236,7 +236,7 @@ void VRML97Converter::dumpGeometry( const citygml::CityObject* object, const cit
 	for ( unsigned int i = 0; i < g->size(); i++ ) dumpPolygon( object, g, (*g)[i] );
 }
 
-void VRML97Converter::dumpPolygon( const citygml::CityObject* object, const citygml::Geometry* g, const citygml::Polygon* p )
+void VRML97Printer::dumpPolygon( const citygml::CityObject* object, const citygml::Geometry* g, const citygml::Polygon* p )
 {
 	static bool s_isFirstVert = true;
 	static TVec3d s_firstVert;
