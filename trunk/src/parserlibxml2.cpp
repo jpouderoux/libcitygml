@@ -58,7 +58,7 @@ protected:
 	std::string getAttribute( void* attributes, const std::string& attname, const std::string& defvalue = "" )
 	{
 		const xmlChar **attrs = (const xmlChar**)attributes;
-		if ( !attrs ) return "";
+		if ( !attrs ) return defvalue;
 		for ( int i = 0; attrs[i] != NULL; i += 2 ) 
 			if ( wstos( attrs[i] ) == attname ) return wstos( attrs[ i + 1 ] );
 		return defvalue;
