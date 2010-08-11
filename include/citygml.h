@@ -583,6 +583,8 @@ namespace citygml
 		// Return the roots elements of the model. You can then navigate the hierarchy using object->getChildren().
 		inline const CityObjects& getCityObjectsRoots( void ) const { return _roots; }
 
+		inline const std::string& getSRSName( void ) const { return _srsName; }
+
 	protected:
 		void addCityObject( CityObject* o );
 
@@ -598,6 +600,8 @@ namespace citygml
 		CityObjectsMap _cityObjectsMap;
 
 		AppearanceManager _appearanceManager;
+
+		std::string _srsName;
 	};
 
 	///////////////////////////////////////////////////////////////////////////////
