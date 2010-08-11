@@ -8,7 +8,7 @@ void analyzeObject( const citygml::CityObject*, unsigned int );
 
 void usage() 
 {
-	std::cout << "Usage: citygmltest [-log] [-filter <mask>] <filename>" << std::endl;
+	std::cout << "Usage: citygmltest [-options...] <filename>" << std::endl;
 	std::cout << " Options:" << std::endl;
 	std::cout << "  -log            Print some informations during parsing" << std::endl;
 	std::cout << "  -filter <mask>  CityGML objects to parse (default:All)" << std::endl
@@ -23,6 +23,7 @@ void usage()
 		<< "                  Examples:" << std::endl
 		<< "                  \"All&~Track&~Room\" to parse everything but tracks & rooms" << std::endl
 		<< "                  \"Road&Railway\" to parse only roads & railways" << std::endl;
+	std::cout << "  -destSRS <srs> Destination SRS (default: no transform)" << std::endl;
 	exit(-1);
 }
 int main( int argc, char **argv )
@@ -32,14 +33,16 @@ int main( int argc, char **argv )
 	int fargc = 1;
 
 	bool log = false;
-	std::string filter = "All";
+
+	citygml::ParserParams params;
 
 	for ( int i = 1; i < argc; i++ ) 
 	{
 		std::string param = std::string( argv[i] );
 		std::transform( param.begin(), param.end(), param.begin(), tolower );
 		if ( param == "-log" ) { log = true; fargc = i+1; }
-		if ( param == "-filter" ) { if ( i == argc - 1 ) usage(); filter = argv[i+1]; i++; fargc = i+1; }
+		if ( param == "-filter" ) { if ( i == argc - 1 ) usage(); params.objectsMask = argv[i+1]; i++; fargc = i+1; }
+		if ( param == "-destsrs" ) { if ( i == argc - 1 ) usage(); params.destSRS = argv[i+1]; i++; fargc = i+1; }
 	}
 	if ( argc - fargc < 1 ) usage();
 
@@ -47,9 +50,6 @@ int main( int argc, char **argv )
 
 	time_t start;
 	time( &start );
-
-	citygml::ParserParams params;
-	params.objectsMask = filter;
 
 #if 0
 	std::ifstream file;

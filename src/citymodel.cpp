@@ -480,7 +480,7 @@ namespace citygml
 	};
 
 	// std::string tokenizer helper
-	std::vector<std::string> tokenize( const std::string& str, const std::string& delimiters = ",|& " )
+	std::vector<std::string> tokenize( const std::string& str, const std::string& delimiters )
 	{
 		std::vector<std::string> tokens;
 		std::string::size_type lastPos = str.find_first_not_of( delimiters, 0 );
