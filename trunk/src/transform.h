@@ -54,6 +54,8 @@ public:
 
 	inline const std::string& getSourceURN( void ) const { return _sourceURN; }
 
+	inline const std::string& getDestURN( void ) const { return _destURN; }
+
 #ifdef USE_GDAL
 	static void* getProjection( const std::string &str )
 	{

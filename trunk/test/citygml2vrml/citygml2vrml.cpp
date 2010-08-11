@@ -139,6 +139,7 @@ int main( int argc, char **argv )
 	std::cout << "Done in " << difftime( end, start ) << " seconds." << std::endl << city->size() << " city objects read." << std::endl;
 
 	std::cout << city->getCityObjectsRoots().size() << " root nodes" << std::endl;
+	if ( city->getSRSName() != "" ) std::cout << "The actual model SRS is " << city->getSRSName() << std::endl;
 	
 	std::string outfile;
 	if ( argc - fargc == 1 ) 

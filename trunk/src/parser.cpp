@@ -500,8 +500,8 @@ void CityGMLHandler::startElement( const std::string& wlocalname, void* attribut
 		_srsDimension = atoi( getAttribute( attributes, "srsDimension", "3" ).c_str() );
 		if ( _srsDimension != 3 ) 
 			std::cerr << "Warning ! srsDimension of gml:posList not set to 3!" << std::endl;
-		
-		createGeoTransform( getAttribute( attributes, "srsName", "" ) );
+
+		createGeoTransform( getAttribute( attributes, "srsName", "" ) );		
 		break;
 
 	case NODETYPE( interior ): _exterior = false; break;
@@ -548,18 +548,23 @@ void CityGMLHandler::startElement( const std::string& wlocalname, void* attribut
 }
 
 void CityGMLHandler::createGeoTransform( std::string srsName )
-{
-	if ( srsName == "" || _params.destSRS == "" ) return;
-
+{	
+	if ( srsName == "" ) return; 
 	// Manage URN composition and retain only the first SRS
 	// ie. transform: urn:ogc:def:crs,crs:EPSG:6.12:3068,crs:EPSG:6.12:5783
-	// to urn:ogc:def:crs:EPSG:6.12:3068 
+	// to urn:ogc:def:crs:EPSG:6.12:3068
 	std::vector<std::string> tokens = citygml::tokenize( srsName, "," );
 	if ( tokens.size() > 1 )
 	{
 		std::string::size_type p = tokens[1].find( ':' );
 		srsName = ( p != std::string::npos ) ? tokens[0] + tokens[1].substr( p ) : srsName = tokens[0] + tokens[1];		
 	}
+
+	if ( _model->_srsName == "" ) _model->_srsName = srsName;
+
+	if ( srsName != _model->_srsName ) { std::cerr << "Warning: More than one SRS is defined. The SRS " << srsName << " is declared while the scene SRS has been set to " << _model->_srsName << std::endl; return; }
+
+	if ( _params.destSRS == "" ) return;
 	
 	delete (GeoTransform*)_geoTransform;
 	_geoTransform = new GeoTransform( srsName, _params.destSRS );
@@ -590,10 +595,11 @@ void CityGMLHandler::endElement( const std::string& wlocalname )
 
 	switch ( nodeType ) 
 	{
-
 	case NODETYPE( CityModel ):
 		MODEL_FILTER();
 		_model->finish( _params.optimize );
+		if ( _geoTransform ) {  std::cout << "The coordinates were transformed from " << _model->_srsName << " to " << ((GeoTransform*)_geoTransform)->getDestURN() << std::endl; _model->_srsName = ((GeoTransform*)_geoTransform)->getDestURN(); }
+		if ( _model->_srsName == "" ) { _model->_srsName = _params.destSRS; std::cerr << "Warning: No SRS was set in the file. The model SRS has been set without transformation to " << _params.destSRS << std::endl; }
 		break;
 
 		// City objects management
