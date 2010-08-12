@@ -18,7 +18,9 @@
 #define __PROJECTION_H__
 
 #include "citygml.h"
-#include "ogrsf_frmts.h"
+#ifdef USE_GDAL
+#	include "ogrsf_frmts.h"
+#endif
 
 class GeoTransform 
 {
