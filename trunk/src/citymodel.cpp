@@ -131,7 +131,14 @@ namespace citygml
 	///////////////////////////////////////////////////////////////////////////////
 
 	TVec3f Polygon::computeNormal( void ) 
-	{		
+	{
+#ifndef TESSNORMALS
+		if ( !_exteriorRing ) return TVec3f();
+
+		TVec3f normal = _exteriorRing->computeNormal();
+
+		return _negNormal ? -normal : normal;
+#else
 		if ( _vertices.empty() || _indices.size() < 3 ) 
 		{
 			//std::cout << "Warning: Unable to compute normal on polygon " << getId() << "!" << std::endl;
@@ -147,6 +154,7 @@ namespace citygml
 		if ( _negNormal ) normal = -normal;
 
 		return TVec3f( (float)normal.x, (float)normal.y, (float)normal.z );
+#endif
 	}
 
 	void Polygon::tesselate( void )
@@ -278,24 +286,19 @@ namespace citygml
 	TVec3f LinearRing::computeNormal( void ) const
 	{
 		unsigned int len = size();
-		TVec3d n;
+
 		if ( len < 3 ) return TVec3f();
 
-		const TVec3d& p1 = _vertices[0];
-
-		unsigned int count = 2;
-
-		while ( count < len ) 
+		TVec3d n( 0., 0., 0. );
+		for ( int i = 0; i < len; i++ )
 		{
-			const TVec3d& p2 = _vertices[count-1];
-			const TVec3d& p3 = _vertices[count];
+			TVec3d current = _vertices[i];
+			TVec3d next = _vertices[(i+1) % len];
 
-			n = ( ( p2 - p1 ).cross( p3 - p1 ) ).normal();
-
-			if ( n.sqrLength() > 0.5 ) break;
-
-			count++;
-		}		
+			n.x += ( current.y - next.y ) * ( current.z + next.z );
+			n.y += ( current.z - next.z ) * ( current.x + next.x );
+			n.z += ( current.x - next.x ) * ( current.y + next.y );
+		}
 		n.normalEq();
 		return TVec3f( (float)n.x, (float)n.y, (float)n.z );
 	}
@@ -365,11 +368,15 @@ namespace citygml
 
 	void Polygon::finish( bool doTesselate ) 
 	{
+#ifndef TESSNORMALS
+		TVec3f normal = computeNormal();
+#endif
 		if ( doTesselate ) tesselate();				
 		else mergeRings();
 
+#ifdef TESSNORMALS
 		TVec3f normal = computeNormal();
-		
+#endif		
 		// Save the normal per point field
 		_normals.resize( _vertices.size() );
 		for ( unsigned int i = 0; i < _vertices.size(); i++ )
