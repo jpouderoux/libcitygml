@@ -97,7 +97,6 @@ void usage()
 		<< "                  \"Road&Railway\" to parse only roads & railways" << std::endl;
 	std::cout << "  -minLOD <level> Minimum LOD level to parse (default:0)" << std::endl;
 	std::cout << "  -maxLOD <level> Maximum LOD level to parse (default:4)" << std::endl;
-	std::cout << "  -destSRS <srs> Destination SRS (default: no transform)" << std::endl;
 	exit( -1 );
 }
 
@@ -119,7 +118,6 @@ int main( int argc, char **argv )
 		if ( param == "-filter" ) { if ( i == argc - 1 ) usage(); params.objectsMask = argv[i+1]; i++; fargc = i+1; }
 		if ( param == "-minlod" ) { if ( i == argc - 1 ) usage(); params.minLOD = atoi( argv[i+1] ); i++; fargc = i+1; }
 		if ( param == "-maxlod" ) { if ( i == argc - 1 ) usage(); params.maxLOD = atoi( argv[i+1] ); i++; fargc = i+1; }
-		if ( param == "-destsrs" ) { if ( i == argc - 1 ) usage(); params.destSRS = argv[i+1]; i++; fargc = i+1; }
 	}
 
 	if ( argc - fargc < 1 ) usage();
@@ -139,7 +137,6 @@ int main( int argc, char **argv )
 	std::cout << "Done in " << difftime( end, start ) << " seconds." << std::endl << city->size() << " city objects read." << std::endl;
 
 	std::cout << city->getCityObjectsRoots().size() << " root nodes" << std::endl;
-	if ( city->getSRSName() != "" ) std::cout << "The actual model SRS is " << city->getSRSName() << std::endl;
 	
 	std::string outfile;
 	if ( argc - fargc == 1 ) 

@@ -20,7 +20,6 @@
 //  http://www.citygml.org/fileadmin/citygml/docs/CityGML_1_0_0_UML_diagrams.pdf
 
 #include "parser.h"
-#include "transform.h"
 
 using namespace citygml;
 
@@ -41,7 +40,6 @@ namespace citygml {
 		// gml
 		NODETYPE( description ),
 		NODETYPE( name ),
-		NODETYPE( coordinates ),
 		NODETYPE( pos ),
 		NODETYPE( boundedBy ),
 		NODETYPE( Envelope ),
@@ -161,7 +159,7 @@ CityGMLHandler::CityGMLHandler( const ParserParams& params )
 : _params( params ), _model( NULL ), _currentCityObject( NULL ), 
 _currentGeometry( NULL ), _currentPolygon( NULL ), _currentRing( NULL ),  _currentGeometryType( GT_Unknown ),
 _currentAppearance( NULL ), _currentLOD( params.minLOD ), 
-_filterNodeType( false ), _filterDepth( 0 ), _exterior( true ), _geoTransform( NULL )
+_filterNodeType( false ), _filterDepth( 0 ), _exterior( true )
 { 
 	_objectsMask = getCityObjectsTypeMaskFromString( _params.objectsMask );
 	cityGMLInit(); 
@@ -186,7 +184,6 @@ void CityGMLHandler::cityGMLInit( void )
 	// gml
 	INSERTNODETYPE( name );
 	INSERTNODETYPE( pos );
-	INSERTNODETYPE( coordinates );
 	INSERTNODETYPE( description );
 	INSERTNODETYPE( boundedBy );
 	INSERTNODETYPE( Envelope );
@@ -356,29 +353,12 @@ template<class T> inline void parseValue( std::stringstream &s, T &v )
 	if ( !s.eof() ) s >> v;
 }
 
-template<class T> inline void parseValue( std::stringstream &s, T &v, GeoTransform* transform ) 
-{
-	parseValue( s, v );
-	if ( transform ) transform->transform( v );
-}
-
 template<class T> inline void parseVecList( std::stringstream &s, std::vector<T> &vec ) 
 {
 	while ( !s.eof() )
 	{
 		T v;
 		s >> v;
-		vec.push_back( v );
-	}
-}
-
-template<class T> inline void parseVecList( std::stringstream &s, std::vector<T> &vec, GeoTransform* transform ) 
-{
-	while ( !s.eof() )
-	{
-		T v;
-		s >> v;
-		if ( transform ) transform->transform( v );
 		vec.push_back( v );
 	}
 }
@@ -491,17 +471,11 @@ void CityGMLHandler::startElement( const std::string& wlocalname, void* attribut
 		_currentPolygon = new Polygon( getGmlIdAttribute( attributes ) );
 		break;
 
-	case NODETYPE( Envelope ): 
-		createGeoTransform( getAttribute( attributes, "srsName", "" ) );
-		break;
-
 	case NODETYPE( posList ):
 		LOD_FILTER();
 		_srsDimension = atoi( getAttribute( attributes, "srsDimension", "3" ).c_str() );
 		if ( _srsDimension != 3 ) 
 			std::cerr << "Warning ! srsDimension of gml:posList not set to 3!" << std::endl;
-
-		createGeoTransform( getAttribute( attributes, "srsName", "" ) );		
 		break;
 
 	case NODETYPE( interior ): _exterior = false; break;
@@ -547,29 +521,6 @@ void CityGMLHandler::startElement( const std::string& wlocalname, void* attribut
 	};
 }
 
-void CityGMLHandler::createGeoTransform( std::string srsName )
-{	
-	if ( srsName == "" ) return; 
-	// Manage URN composition and retain only the first SRS
-	// ie. transform: urn:ogc:def:crs,crs:EPSG:6.12:3068,crs:EPSG:6.12:5783
-	// to urn:ogc:def:crs:EPSG:6.12:3068
-	std::vector<std::string> tokens = citygml::tokenize( srsName, "," );
-	if ( tokens.size() > 1 )
-	{
-		std::string::size_type p = tokens[1].find( ':' );
-		srsName = ( p != std::string::npos ) ? tokens[0] + tokens[1].substr( p ) : srsName = tokens[0] + tokens[1];		
-	}
-
-	if ( _model->_srsName == "" ) _model->_srsName = srsName;
-
-	if ( srsName != _model->_srsName ) { std::cerr << "Warning: More than one SRS is defined. The SRS " << srsName << " is declared while the scene SRS has been set to " << _model->_srsName << std::endl; return; }
-
-	if ( _params.destSRS == "" ) return;
-	
-	delete (GeoTransform*)_geoTransform;
-	_geoTransform = new GeoTransform( srsName, _params.destSRS );
-}
-
 void CityGMLHandler::endElement( const std::string& wlocalname ) 
 {
 	std::string localname = getNodeName( wlocalname );
@@ -595,11 +546,10 @@ void CityGMLHandler::endElement( const std::string& wlocalname )
 
 	switch ( nodeType ) 
 	{
+
 	case NODETYPE( CityModel ):
 		MODEL_FILTER();
 		_model->finish( _params.optimize );
-		if ( _geoTransform ) {  std::cout << "The coordinates were transformed from " << _model->_srsName << " to " << ((GeoTransform*)_geoTransform)->getDestURN() << std::endl; _model->_srsName = ((GeoTransform*)_geoTransform)->getDestURN(); }
-		if ( _model->_srsName == "" ) { _model->_srsName = _params.destSRS; std::cerr << "Warning: No SRS was set in the file. The model SRS has been set without transformation to " << _params.destSRS << std::endl; }
 		break;
 
 		// City objects management
@@ -659,7 +609,7 @@ void CityGMLHandler::endElement( const std::string& wlocalname )
 	case NODETYPE( upperCorner ):
 		{
 			TVec3d p;
-			parseValue( buffer, p, (GeoTransform*)_geoTransform );
+			buffer >> p;
 			if ( nodeType == NODETYPE( lowerCorner ) )
 				_points.insert( _points.begin(), p );
 			else
@@ -718,7 +668,7 @@ void CityGMLHandler::endElement( const std::string& wlocalname )
 		if ( _currentCityObject )
 		{
 			TVec3d p;
-			parseValue( buffer, p, (GeoTransform*)_geoTransform );
+			parseValue( buffer, p );
 			if ( !_currentPolygon )
 				_points.push_back( p );
 			else if ( _currentRing )
@@ -726,12 +676,11 @@ void CityGMLHandler::endElement( const std::string& wlocalname )
 		}
 		break;
 
-	case NODETYPE( coordinates ):
 	case NODETYPE( posList ):
-		if ( !_currentPolygon ) { parseVecList( buffer, _points, (GeoTransform*)_geoTransform ); break; }
+		if ( !_currentPolygon ) break;
 		_currentPolygon->_negNormal = ( _orientation != '+' );
 		if ( _currentRing ) 
-			parseVecList( buffer, _currentRing->getVertices(), (GeoTransform*)_geoTransform );
+			parseVecList( buffer, _currentRing->getVertices() );
 		break;
 
 	case NODETYPE( interior ):

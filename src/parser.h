@@ -115,8 +115,6 @@ namespace citygml {
 
 		inline std::string getGmlIdAttribute( void* attributes ) { return getAttribute( attributes, "gml:id", "" ); }
 
-		void createGeoTransform( std::string );
-
 	protected:
 
 		static std::map< std::string, CityGMLNodeType > s_cityGMLNodeTypeMap;
@@ -159,8 +157,6 @@ namespace citygml {
 		bool _appearanceAssigned;
 
 		GeometryType _currentGeometryType;
-
-		void* _geoTransform;
 	};
 
 }

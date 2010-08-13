@@ -25,9 +25,9 @@
 
 #define LIBCITYGML_VERSION_MAJOR 0
 #define LIBCITYGML_VERSION_MINOR 1
-#define LIBCITYGML_VERSION_REVISION 4
+#define LIBCITYGML_VERSION_REVISION 3
 
-#define LIBCITYGML_VERSIONSTR "0.1.4"
+#define LIBCITYGML_VERSIONSTR "0.1.3"
 
 #if defined( _MSC_VER ) && defined( LIBCITYGML_DYNAMIC )
 #	ifdef LIBCITYGML_BUILD
@@ -93,12 +93,11 @@ namespace citygml
 	// optimize: merge geometries & polygons that share the same appearance in the same object in order to reduce the global hierarchy
 	// pruneEmptyObjects: remove the objects which do not contains any geometrical entity
 	// tesselate: convert the interior & exteriors polygons to triangles
-	// destSRS: the SRS (WKT, EPSG, OGC URN, etc.) where the coordinates must be transformed, default ("") is no transformation
 
 	class ParserParams {
 
 	public:
-		ParserParams( void ) : objectsMask( "All" ), minLOD( 0 ), maxLOD( 4 ), optimize( false ), pruneEmptyObjects( false ), tesselate( true ), destSRS( "" ) { }
+		ParserParams( void ) : objectsMask( "All" ), minLOD( 0 ), maxLOD( 4 ), optimize( false ), pruneEmptyObjects( false ), tesselate( true ) { }
 
 	public:
 		std::string objectsMask; 
@@ -107,7 +106,6 @@ namespace citygml
 		bool optimize; 
 		bool pruneEmptyObjects; 
 		bool tesselate;
-		std::string destSRS;
 	};
 
 	LIBCITYGML_EXPORT CityModel* load( std::istream& stream, const ParserParams& params );
@@ -583,8 +581,6 @@ namespace citygml
 		// Return the roots elements of the model. You can then navigate the hierarchy using object->getChildren().
 		inline const CityObjects& getCityObjectsRoots( void ) const { return _roots; }
 
-		inline const std::string& getSRSName( void ) const { return _srsName; }
-
 	protected:
 		void addCityObject( CityObject* o );
 
@@ -600,8 +596,6 @@ namespace citygml
 		CityObjectsMap _cityObjectsMap;
 
 		AppearanceManager _appearanceManager;
-
-		std::string _srsName;
 	};
 
 	///////////////////////////////////////////////////////////////////////////////
@@ -611,8 +605,6 @@ namespace citygml
 	std::ostream& operator<<( std::ostream&, const citygml::Geometry& );
 	std::ostream& operator<<( std::ostream&, const citygml::CityObject& );
 	std::ostream& operator<<( std::ostream&, const citygml::CityModel & );
-
-	std::vector<std::string> tokenize( const std::string& str, const std::string& delimiters = ",|& " );
 }
 
 #endif // __CITYGML_H__

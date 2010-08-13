@@ -89,14 +89,9 @@ SET(LIBRARY_OUTPUT_PATH ${OUTPUT_LIBDIR})
   # SET( CMAKE_BUILD_TYPE "Release" )
 # ENDIF( DEBUG_BUILD )
 
-OPTION(LIBCITYGML_STATIC_CRT "Set to ON to link libcitygml with the multithread CRT static library (instead of DLL)." ON)
-
 # xml library
 OPTION(LIBCITYGML_USE_XERCESC "Set to ON to build libcitygml with Xerces-c library." ON)
 OPTION(LIBCITYGML_USE_LIBXML2 "Set to ON to build libcitygml with LibXml2 library." OFF)
-
-# gdal library
-OPTION(LIBCITYGML_USE_GDAL "Set to ON to build libcitygml with GDAL library and support coordinates reprojections." OFF)
 
 IF ( LIBCITYGML_USE_XERCESC )
 	IF( LIBCITYGML_USE_LIBXML2 )
