@@ -413,7 +413,7 @@ namespace citygml
 
 	///////////////////////////////////////////////////////////////////////////////
 
-	std::string getCityObjectsClassName( CityObjectsTypeMask mask );
+	LIBCITYGML_EXPORT std::string getCityObjectsClassName( CityObjectsTypeMask mask );
 
 	CityObjectsTypeMask getCityObjectsTypeMaskFromString( const std::string& stringMask );
 
