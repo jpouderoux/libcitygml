@@ -238,7 +238,7 @@ namespace citygml
 		friend class CityGMLHandler;
 		friend class CityModel;
 	public:
-		AppearanceManager( void ) {}
+		AppearanceManager( void ) : _lastId( "" ), _lastCoords( NULL ) {}
 
 		~AppearanceManager( void );
 
@@ -261,14 +261,15 @@ namespace citygml
 	protected:
 		void addAppearance( Appearance* );
 		void assignNode( const std::string& nodeid );
-		void assignNode( const std::string& nodeid, Material* );
-		void assignTexCoords( const std::string& nodeid, TexCoords* );
-		void assignTexCoords( TexCoords* );
+		/*void assignNode( const std::string& nodeid, Material* );
+		void assignTexCoords( const std::string& nodeid, TexCoords* );*/
+		bool assignTexCoords( TexCoords* );
 
 		void finish( void ) { _appearanceMap.clear(); _texCoordsMap.clear(); }
 
 	protected:
 		std::string _lastId;
+		TexCoords* _lastCoords;
 
 		std::vector< Appearance* > _appearances;
 
@@ -308,6 +309,8 @@ namespace citygml
 	};
 
 	///////////////////////////////////////////////////////////////////////////////
+
+	class Geometry;
 
 	class Polygon : public Object
 	{
@@ -360,6 +363,8 @@ namespace citygml
 		std::vector<LinearRing*> _interiorRings;
 
 		bool _negNormal;
+
+		Geometry *_geometry;
 	};
 
 	///////////////////////////////////////////////////////////////////////////////

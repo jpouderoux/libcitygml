@@ -296,7 +296,7 @@ namespace citygml
 
 			count++;
 		}		
-		//n.normalEq();
+		n.normalEq();
 		return TVec3f( (float)n.x, (float)n.y, (float)n.z );
 	}
 
@@ -335,25 +335,23 @@ namespace citygml
 	void AppearanceManager::assignNode( const std::string& nodeid )
 	{ 
 		_lastId = nodeid; 
-		if ( !getAppearance( nodeid ) )
-			_appearanceMap[ nodeid ] = _appearances[ _appearances.size() - 1 ]; 
-	}
-
-	void AppearanceManager::assignNode( const std::string& nodeid, Material* material ) 
-	{ 
-		_lastId = nodeid; 
 		if ( !getAppearance( nodeid ) ) 
-			_appearanceMap[ nodeid ] = material; 
+		{
+			_appearanceMap[ nodeid ] = _appearances[ _appearances.size() - 1 ]; 
+		
+			if ( _lastCoords ) { assignTexCoords( _lastCoords ); _lastId = ""; }
+		}
+		else _lastId = "";
 	}
 
-	void AppearanceManager::assignTexCoords( const std::string& nodeid, TexCoords* tex ) 
+	bool AppearanceManager::assignTexCoords( TexCoords* tex ) 
 	{ 
-		_texCoordsMap[ nodeid ] = tex;
-	}
-
-	void AppearanceManager::assignTexCoords( TexCoords* tex ) 
-	{ 
+		_lastCoords = tex;
+		if ( _lastId == "" ) return false;
 		_texCoordsMap[ _lastId ] = tex; 
+		_lastCoords = 0;
+		_lastId = "";
+		return true;
 	}
 
 	///////////////////////////////////////////////////////////////////////////////
@@ -380,11 +378,13 @@ namespace citygml
 
 	void Polygon::finish( AppearanceManager& appearanceManager, Appearance* defAppearance )
 	{
-		appearanceManager.getTexCoords( getId(), _texCoords );
+		if ( !appearanceManager.getTexCoords( getId(), _texCoords ) )
+			appearanceManager.getTexCoords( _geometry->getId(), _texCoords );
 		
 		_texCoords.resize( _vertices.size() );
 		
 		_appearance = appearanceManager.getAppearance( getId() );
+
 		if ( !_appearance ) _appearance = defAppearance;
 	}
 
@@ -405,6 +405,7 @@ namespace citygml
 
 	void Geometry::addPolygon( Polygon* p ) 
 	{ 
+		p->_geometry = this;
 		_polygons.push_back( p ); 
 	}
 
@@ -418,17 +419,17 @@ namespace citygml
 		while ( !finish && optimize ) 
 		{
 			finish = true;
+			
 			for ( int i = 0; finish && i < (int)_polygons.size() - 1; i++ ) 
 			{
 				for ( int j = i+1; finish && j < (int)_polygons.size() - 1; j++ ) 
 				{
-				  if ( _polygons[i]->merge( _polygons[j] ) ) 
-					{
-						//std::cout << " Geom : " << getId() << "... Poly " << _polygons[i]->getId() << " merged with " << _polygons[j]->getId() << std::endl;
-						_polygons.erase( _polygons.begin() + j );
-						finish = false;
-						break;
-					}
+					if ( !_polygons[i]->merge( _polygons[j] ) ) continue;
+					
+					//std::cout << " Geom : " << getId() << "... Poly " << _polygons[i]->getId() << " merged with " << _polygons[j]->getId() << std::endl;
+					_polygons.erase( _polygons.begin() + j );
+					finish = false;
+					break;					
 				}
 			}
 		}
@@ -545,6 +546,11 @@ namespace citygml
 	void CityObject::finish( AppearanceManager& appearanceManager, bool optimize ) 
 	{
 		bool finish = false;
+
+		Appearance* myappearance = appearanceManager.getAppearance( getId() );
+		std::vector< Geometry* >::const_iterator it = _geometries.begin();
+		for ( ; it != _geometries.end(); it++ ) (*it)->finish( appearanceManager, myappearance ? myappearance : NULL, optimize );
+
 		while ( !finish && optimize ) 
 		{
 			finish = true;
@@ -552,20 +558,15 @@ namespace citygml
 			{
 				for ( int j = i+1; finish && j < (int)_geometries.size() - 1; j++ ) 
 				{
-					if ( _geometries[i]->merge( _geometries[j] ) ) 
-					{
-						//std::cout << " Obj : " << getId() << "... Geom " << _geometries[i]->getId() << " merged with " << _geometries[j]->getId() << std::endl;
-						_geometries.erase( _geometries.begin() + j );
-						finish = false;
-						break;
-					}
+					if ( !_geometries[i]->merge( _geometries[j] ) ) continue;
+					
+					//std::cout << " Obj : " << getId() << "... Geom " << _geometries[i]->getId() << " merged with " << _geometries[j]->getId() << std::endl;
+					_geometries.erase( _geometries.begin() + j );
+					finish = false;
+					break;
 				}
 			}
 		}
-
-		Appearance* myappearance = appearanceManager.getAppearance( getId() );
-		std::vector< Geometry* >::const_iterator it = _geometries.begin();
-		for ( ; it != _geometries.end(); it++ ) (*it)->finish( appearanceManager, myappearance ? myappearance : NULL, optimize );
 	}
 
 	///////////////////////////////////////////////////////////////////////////////
