@@ -782,7 +782,8 @@ void CityGMLHandler::endElement( const std::string& wlocalname )
 	case NODETYPE( GeoreferencedTexture ):
 	case NODETYPE( Material ):
 	case NODETYPE( X3DMaterial ):
-		if ( _currentAppearance && _currentGeometry && !_appearanceAssigned ) _model->_appearanceManager.assignNode( _currentGeometry->getId() );
+		if ( _currentAppearance && _currentGeometry && !_appearanceAssigned )
+			_model->_appearanceManager.assignNode( _currentGeometry->getId() );
 		_currentAppearance = NULL;
 		break;
 
