@@ -21,12 +21,12 @@
 #include "citygml.h"
 
 // VRML97 Helper class to produce a hierarchy of VRML nodes with attributes 
-class VRML97Printer 
+class VRML97Converter 
 {
 public:
-	VRML97Printer( citygml::CityModel* city ) : _cityModel( city ), _indentCount( 0 ) {}
+	VRML97Converter( citygml::CityModel* city ) : _cityModel( city ), _indentCount( 0 ) {}
 
-	bool save( const std::string& outFilename );
+	bool convert( const std::string& outFilename );
 
 private:
 	void dumpCityObject( const citygml::CityObject* );
@@ -35,7 +35,7 @@ private:
 
 	void dumpPolygon( const citygml::CityObject*, const citygml::Geometry*, const citygml::Polygon* );
 
-protected:
+
 	inline void addHeader() { _out << "#VRML V2.0 utf8" << std::endl; }
 
 	inline void printIndent() { for ( int i = 0; i < _indentCount; i++ ) _out << "\t"; }
@@ -89,21 +89,19 @@ void usage()
 		<< "                   BuildingInstallation, BuildingFurniture, Door, Window, " << std::endl
 		<< "                   CityFurniture, Track, Road, Railway, Square, PlantCover," << std::endl
 		<< "                   SolitaryVegetationObject, WaterBody, TINRelief, LandUse," << std::endl
-		<< "                   Tunnel, Bridge, BridgeConstructionElement," << std::endl
-		<< "                   BridgeInstallation, BridgePart,  All" << std::endl
+		<< "                   All" << std::endl
 		<< "                  and seperators |,&,~." << std::endl
 		<< "                  Examples:" << std::endl
 		<< "                  \"All&~Track&~Room\" to parse everything but tracks & rooms" << std::endl
 		<< "                  \"Road&Railway\" to parse only roads & railways" << std::endl;
 	std::cout << "  -minLOD <level> Minimum LOD level to parse (default:0)" << std::endl;
 	std::cout << "  -maxLOD <level> Maximum LOD level to parse (default:4)" << std::endl;
-	std::cout << "  -destSRS <srs> Destination SRS (default: no transform)" << std::endl;
 	exit( -1 );
 }
 
 int main( int argc, char **argv )
 {
-	std::cout << "citygml2vrml v." << LIBCITYGML_VERSIONSTR << " (c) 2010 Joachim Pouderoux, BRGM" << std::endl;
+	std::cout << "citygml2vrml v.0.1.2 (c) 2010 Joachim Pouderoux, BRGM" << std::endl;
 
 	int fargc = 1;
 
@@ -117,9 +115,8 @@ int main( int argc, char **argv )
 		if ( param == "-comments" ) { g_comments = true; fargc = i+1; }
 		if ( param == "-center" ) { g_center = true; fargc = i+1; }
 		if ( param == "-filter" ) { if ( i == argc - 1 ) usage(); params.objectsMask = argv[i+1]; i++; fargc = i+1; }
-		if ( param == "-minlod" ) { if ( i == argc - 1 ) usage(); params.minLOD = atoi( argv[i+1] ); i++; fargc = i+1; }
-		if ( param == "-maxlod" ) { if ( i == argc - 1 ) usage(); params.maxLOD = atoi( argv[i+1] ); i++; fargc = i+1; }
-		if ( param == "-destsrs" ) { if ( i == argc - 1 ) usage(); params.destSRS = argv[i+1]; i++; fargc = i+1; }
+		if ( param == "-minLOD" ) { if ( i == argc - 1 ) usage(); params.minLOD = atoi( argv[i+1] ); i++; fargc = i+1; }
+		if ( param == "-maxLOD" ) { if ( i == argc - 1 ) usage(); params.maxLOD = atoi( argv[i+1] ); i++; fargc = i+1; }
 	}
 
 	if ( argc - fargc < 1 ) usage();
@@ -139,7 +136,6 @@ int main( int argc, char **argv )
 	std::cout << "Done in " << difftime( end, start ) << " seconds." << std::endl << city->size() << " city objects read." << std::endl;
 
 	std::cout << city->getCityObjectsRoots().size() << " root nodes" << std::endl;
-	if ( city->getSRSName() != "" ) std::cout << "The actual model SRS is " << city->getSRSName() << std::endl;
 	
 	std::string outfile;
 	if ( argc - fargc == 1 ) 
@@ -151,9 +147,9 @@ int main( int argc, char **argv )
 	
 	std::cout << "Converting the city model to VRML97 file " << outfile << "..." << std::endl;
 
-	VRML97Printer printer( city );
+	VRML97Converter converter( city );
 
-	if ( printer.save( outfile ) )
+	if ( converter.convert( outfile ) )
 		std::cout << "Done." << std::endl;
 	else 
 		std::cout << "Failed!" << std::endl;
@@ -164,7 +160,7 @@ int main( int argc, char **argv )
 
 // VRML97 city converter
 
-bool VRML97Printer::save( const std::string& outFilename )
+bool VRML97Converter::convert( const std::string& outFilename )
 {
 	if ( !_cityModel ) return false;
 
@@ -209,7 +205,7 @@ bool VRML97Printer::save( const std::string& outFilename )
 	return true;
 }
 
-void VRML97Printer::dumpCityObject( const citygml::CityObject* object ) 
+void VRML97Converter::dumpCityObject( const citygml::CityObject* object ) 
 {
 	if ( !object ) return;
 
@@ -230,7 +226,7 @@ void VRML97Printer::dumpCityObject( const citygml::CityObject* object )
 	endGroup();
 }
 
-void VRML97Printer::dumpGeometry( const citygml::CityObject* object, const citygml::Geometry* g )
+void VRML97Converter::dumpGeometry( const citygml::CityObject* object, const citygml::Geometry* g )
 {
 	if ( !g ) return;
 
@@ -239,7 +235,7 @@ void VRML97Printer::dumpGeometry( const citygml::CityObject* object, const cityg
 	for ( unsigned int i = 0; i < g->size(); i++ ) dumpPolygon( object, g, (*g)[i] );
 }
 
-void VRML97Printer::dumpPolygon( const citygml::CityObject* object, const citygml::Geometry* g, const citygml::Polygon* p )
+void VRML97Converter::dumpPolygon( const citygml::CityObject* object, const citygml::Geometry* g, const citygml::Polygon* p )
 {
 	static bool s_isFirstVert = true;
 	static TVec3d s_firstVert;
