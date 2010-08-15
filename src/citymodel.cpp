@@ -59,7 +59,7 @@ namespace citygml
 	std::ostream& operator<<( std::ostream& os, const CityObject& o ) 
 	{
 		os << o.getType() << ": " << o.getId() << std::endl;
-		os << "  BBox: " << o.getEnvelope() << std::endl;
+		os << "  Envelope: " << o.getEnvelope() << std::endl;
 
 		std::map< std::string, std::string >::const_iterator it = o._properties.begin();
 		while ( it != o._properties.end() )
@@ -92,14 +92,90 @@ namespace citygml
 		return out;
 	}
 
+	///////////////////////////////////////////////////////////////////////////////
+
+	TVec3d LinearRing::computeNormal( void ) const
+	{
+		unsigned int len = size();
+		if ( len < 3 ) return TVec3d();
+
+		// Tampieri, F. 1992. Newell's method for computing the plane equation of a polygon. In Graphics Gems III, pp.231-232. 
+		TVec3d n( 0., 0., 0. );
+		for ( unsigned int i = 0; i < len; i++ )
+		{
+			const TVec3d& current = _vertices[i];
+			const TVec3d& next = _vertices[ ( i + 1 ) % len];
+
+			n.x += ( current.y - next.y ) * ( current.z + next.z );
+			n.y += ( current.z - next.z ) * ( current.x + next.x );
+			n.z += ( current.x - next.x ) * ( current.y + next.y );
+		}
+		return n.normal();
+	}
+
+	void LinearRing::finish( void )
+	{
+		// Remove duplicated vertex
+		unsigned int len = _vertices.size();
+		if ( len < 2 ) return;
+
+		for ( unsigned int i = 0; i < len; i++ )
+		{
+			if ( ( _vertices[i] - _vertices[ ( i + 1 ) % len ] ).sqrLength() < 0.00000001 )
+			{
+				_vertices.erase( _vertices.begin() + i );
+				finish();
+				return;
+			}
+		}
+	}
+
+	///////////////////////////////////////////////////////////////////////////////
+
+	AppearanceManager::~AppearanceManager( void ) 
+	{
+		for ( unsigned int i = 0; i < _appearances.size(); i++ ) delete _appearances[i];
+
+		std::map<std::string, TexCoords*>::iterator it = _texCoordsMap.begin();
+		for ( ; it != _texCoordsMap.end(); it++ ) delete it->second;
+	}
+
+	void AppearanceManager::addAppearance( Appearance* app ) 
+	{ 
+		if ( app ) _appearances.push_back( app ); 
+	}
+
+	void AppearanceManager::assignNode( const std::string& nodeid )
+	{ 
+		_lastId = nodeid; 
+		if ( !getAppearance( nodeid ) ) 
+		{
+			_appearanceMap[ nodeid ] = _appearances[ _appearances.size() - 1 ]; 
+		
+			if ( _lastCoords ) { assignTexCoords( _lastCoords ); _lastId = ""; }
+		}
+		else _lastId = "";
+	}
+
+	bool AppearanceManager::assignTexCoords( TexCoords* tex ) 
+	{ 
+		_lastCoords = tex;
+		if ( _lastId == "" ) return false;
+		_texCoordsMap[ _lastId ] = tex; 
+		_lastCoords = 0;
+		_lastId = "";
+		return true;
+	}
+
 	///////////////////////////////////////////////////////////////////////////
 	// GLU based polygon tesselator
-	class Tesseletor 
-	{
-		typedef void (APIENTRY *GLU_TESS_CALLBACK)();
+	class Tesselator 
+	{		
 	public:
-		Tesseletor( unsigned int verticesCount, GLenum winding_rule = GLU_TESS_WINDING_ODD );
-		~Tesseletor( void );
+		static Tesselator* getInstance( void ) { if ( !_instance ) _instance = new Tesselator(); return _instance; }
+		static void destroy( void ) { delete _instance; _instance = 0; }
+		
+		void init( unsigned int verticesCount, const TVec3d& normal, GLenum winding_rule = GLU_TESS_WINDING_ODD );
 
 		// Add a new contour - add the exterior ring first, then interiors 
 		void addContour( const std::vector<TVec3d>& );
@@ -112,6 +188,10 @@ namespace citygml
 		inline const std::vector<unsigned int>& getIndices( void ) const { return _indices; }
 
 	private:
+		Tesselator( void );
+		~Tesselator( void );
+
+		typedef void (APIENTRY *GLU_TESS_CALLBACK)();
 		static void CALLBACK beginCallback( GLenum, void* );
 		static void CALLBACK vertexCallback( GLvoid*, void* );
 		static void CALLBACK combineCallback( GLdouble[3], void* [4], GLfloat [4], void** , void* );
@@ -119,6 +199,7 @@ namespace citygml
 		static void CALLBACK errorCallback( GLenum, void* );	
 
 	private:
+		static Tesselator* _instance; // singleton
 		GLUtesselator *_tobj;
 		GLenum  _curMode;
 
@@ -130,14 +211,19 @@ namespace citygml
 
 	///////////////////////////////////////////////////////////////////////////////
 
-	TVec3f Polygon::computeNormal( void ) 
+	Polygon::~Polygon( void ) 
+	{ 
+		delete _exteriorRing;
+		std::vector< LinearRing* >::const_iterator it = _interiorRings.begin();
+		for ( ; it != _interiorRings.end(); it++ ) delete *it;
+	}
+
+	TVec3d Polygon::computeNormal( void ) 
 	{
 #ifndef TESSNORMALS
-		if ( !_exteriorRing ) return TVec3f();
+		if ( !_exteriorRing ) return TVec3d();
 
-		TVec3f normal = _exteriorRing->computeNormal();
-
-		return _negNormal ? -normal : normal;
+		TVec3d normal = _exteriorRing->computeNormal();
 #else
 		if ( _vertices.empty() || _indices.size() < 3 ) 
 		{
@@ -150,14 +236,11 @@ namespace citygml
 		const TVec3d& p3 = _vertices[_indices[2]];
 
 		TVec3d normal = ( ( p2 - p1 ).cross( p3 - p1 ) ).normal();
-
-		if ( _negNormal ) normal = -normal;
-
-		return TVec3f( (float)normal.x, (float)normal.y, (float)normal.z );
 #endif
+		return _negNormal ? -normal : normal;
 	}
 
-	void Polygon::tesselate( void )
+	void Polygon::tesselate( const TVec3d& normal )
 	{
 		_indices.clear();
 
@@ -172,23 +255,24 @@ namespace citygml
 		for ( unsigned int i = 0; i < _interiorRings.size(); i++ )
 			vsize += _interiorRings[i]->size();
 
-		Tesseletor tess( vsize );
+		Tesselator* tess = Tesselator::getInstance();
+		tess->init( vsize, normal );
 
-		tess.addContour( _exteriorRing->getVertices() );
+		tess->addContour( _exteriorRing->getVertices() );
 
 		for ( unsigned int i = 0; i < _interiorRings.size(); i++ )
-			tess.addContour( _interiorRings[i]->getVertices() ); 
+			tess->addContour( _interiorRings[i]->getVertices() ); 
 
-		tess.compute();
+		tess->compute();
 
-		_vertices.reserve( tess.getVertices().size() );
-		std::copy( tess.getVertices().begin(), tess.getVertices().end(), std::back_inserter( _vertices ) );
+		_vertices.reserve( tess->getVertices().size() );
+		std::copy( tess->getVertices().begin(), tess->getVertices().end(), std::back_inserter( _vertices ) );
 
-		unsigned int indicesSize = tess.getIndices().size();
+		unsigned int indicesSize = tess->getIndices().size();
 		if ( indicesSize > 0 ) 
 		{
 			_indices.resize( indicesSize );
-			memcpy (&_indices[0], &tess.getIndices()[0], indicesSize * sizeof(unsigned int) );
+			memcpy (&_indices[0], &tess->getIndices()[0], indicesSize * sizeof(unsigned int) );
 		}
 
 		clearRings();
@@ -222,7 +306,7 @@ namespace citygml
 
 	void Polygon::clearRings( void )
 	{
-		delete _exteriorRing; 
+		delete _exteriorRing;
 		_exteriorRing = NULL;
 		for ( unsigned int i = 0; i < _interiorRings.size(); i++ ) delete _interiorRings[i]; 
 		_interiorRings.clear();
@@ -242,7 +326,7 @@ namespace citygml
 		unsigned int pVSize = p->_vertices.size();
 		_vertices.resize( oldVSize + pVSize );
 		for ( unsigned int i = 0; i < pVSize; i++ )
-			_vertices[ oldVSize + i ] = p->_vertices[ i ];
+			_vertices[ oldVSize + i ] = p->_vertices[i];
 		p->_vertices.clear();
 		
 		// merge indices
@@ -251,7 +335,7 @@ namespace citygml
 			unsigned int pSize = p->_indices.size();
 			_indices.resize( oldSize + pSize );
 			for ( unsigned int i = 0; i < pSize; i++ )
-				_indices[ oldSize + i ] = oldVSize + p->_indices[ i ];
+				_indices[ oldSize + i ] = oldVSize + p->_indices[i];
 			p->_indices.clear();
 		}
 
@@ -261,7 +345,7 @@ namespace citygml
 			unsigned int pSize = p->_normals.size();
 			_normals.resize( oldSize + pSize );
 			for ( unsigned int i = 0; i < pSize; i++ )
-				_normals[ oldSize + i ] = p->_normals[ i ];
+				_normals[ oldSize + i ] = p->_normals[i];
 			p->_normals.clear();
 		}
 
@@ -271,7 +355,7 @@ namespace citygml
 			unsigned int pSize = min( p->_texCoords.size(), pVSize );
 			_texCoords.resize( oldSize + pSize );
 			for ( unsigned int i = 0; i < pSize; i++ )
-				_texCoords[ oldSize + i ] = p->_texCoords[ i ];
+				_texCoords[ oldSize + i ] = p->_texCoords[i];
 			p->_texCoords.clear();
 		}
 
@@ -281,106 +365,19 @@ namespace citygml
 		return true;
 	}
 
-	///////////////////////////////////////////////////////////////////////////////
-
-	TVec3f LinearRing::computeNormal( void ) const
-	{
-		unsigned int len = size();
-
-		if ( len < 3 ) return TVec3f();
-
-		TVec3d n( 0., 0., 0. );
-		for ( int i = 0; i < len; i++ )
-		{
-			TVec3d current = _vertices[i];
-			TVec3d next = _vertices[(i+1) % len];
-
-			n.x += ( current.y - next.y ) * ( current.z + next.z );
-			n.y += ( current.z - next.z ) * ( current.x + next.x );
-			n.z += ( current.x - next.x ) * ( current.y + next.y );
-		}
-		n.normalEq();
-		return TVec3f( (float)n.x, (float)n.y, (float)n.z );
-	}
-
-	void LinearRing::finish( void )
-	{
-		// Remove duplicated vertex
-		unsigned int len = _vertices.size();
-		if ( len < 2 ) return;
-
-		for ( unsigned int i = 0; i < len; i++ )
-		{
-			if ( ( _vertices[ i ] - _vertices[ ( i + 1 ) % len ] ).sqrLength() < 0.00000001 )
-			{
-				_vertices.erase( _vertices.begin() + i );
-				finish();
-				return;
-			}
-		}
-	}
-
-	///////////////////////////////////////////////////////////////////////////////
-
-	AppearanceManager::~AppearanceManager( void ) 
-	{
-		for ( unsigned int i = 0; i < _appearances.size(); i++ ) delete _appearances[ i ];
-
-		std::map<std::string, TexCoords*>::iterator it = _texCoordsMap.begin();
-		for ( ; it != _texCoordsMap.end(); it++ ) delete it->second;
-	}
-
-	void AppearanceManager::addAppearance( Appearance* app ) 
-	{ 
-		if ( app ) _appearances.push_back( app ); 
-	}
-
-	void AppearanceManager::assignNode( const std::string& nodeid )
-	{ 
-		_lastId = nodeid; 
-		if ( !getAppearance( nodeid ) ) 
-		{
-			_appearanceMap[ nodeid ] = _appearances[ _appearances.size() - 1 ]; 
-		
-			if ( _lastCoords ) { assignTexCoords( _lastCoords ); _lastId = ""; }
-		}
-		else _lastId = "";
-	}
-
-	bool AppearanceManager::assignTexCoords( TexCoords* tex ) 
-	{ 
-		_lastCoords = tex;
-		if ( _lastId == "" ) return false;
-		_texCoordsMap[ _lastId ] = tex; 
-		_lastCoords = 0;
-		_lastId = "";
-		return true;
-	}
-
-	///////////////////////////////////////////////////////////////////////////////
-
-	Polygon::~Polygon( void ) 
-	{ 
-		delete _exteriorRing;
-		std::vector< LinearRing* >::const_iterator it = _interiorRings.begin();
-		for ( ; it != _interiorRings.end(); it++ ) delete *it;
-	}
-
 	void Polygon::finish( bool doTesselate ) 
 	{
 #ifndef TESSNORMALS
-		TVec3f normal = computeNormal();
+		TVec3d normal = computeNormal();
+		if ( doTesselate ) tesselate( normal );	else mergeRings();
+#else
+		if ( doTesselate ) tesselate( TVec3d() );	else mergeRings();
+		normal = computeNormal();
 #endif
-		if ( doTesselate ) tesselate();				
-		else mergeRings();
-
-#ifdef TESSNORMALS
-		TVec3f normal = computeNormal();
-#endif		
 		// Save the normal per point field
 		_normals.resize( _vertices.size() );
 		for ( unsigned int i = 0; i < _vertices.size(); i++ )
-			_normals[ i ] = normal;
+			_normals[i] = TVec3f( (float)normal.x, (float)normal.y, (float)normal.z );
 	}
 
 	void Polygon::finish( AppearanceManager& appearanceManager, Appearance* defAppearance )
@@ -432,11 +429,12 @@ namespace citygml
 				for ( int j = i+1; finish && j < (int)_polygons.size() - 1; j++ ) 
 				{
 					if ( !_polygons[i]->merge( _polygons[j] ) ) continue;
-					
+
+					delete _polygons[j];
+
 					//std::cout << " Geom : " << getId() << "... Poly " << _polygons[i]->getId() << " merged with " << _polygons[j]->getId() << std::endl;
 					_polygons.erase( _polygons.begin() + j );
-					finish = false;
-					break;					
+					finish = false;		
 				}
 			}
 		}
@@ -449,7 +447,7 @@ namespace citygml
 
 		unsigned int pSize = g->_polygons.size();
 		for ( unsigned int i = 0; i < pSize; i++ )
-			_polygons.push_back( g->_polygons[ i ] );
+			_polygons.push_back( g->_polygons[i] );
 
 		g->_polygons.clear();
 
@@ -481,6 +479,12 @@ namespace citygml
 		GETCITYNAME( WaterBody );
 		GETCITYNAME( TINRelief );
 		GETCITYNAME( LandUse );
+		GETCITYNAME( Tunnel );
+		GETCITYNAME( Bridge );
+		GETCITYNAME( BridgeConstructionElement );
+		GETCITYNAME( BridgeInstallation );
+		GETCITYNAME( BridgePart );
+		GETCITYNAME( GenericCityObject );
 #undef GETCITYNAME
 		std::string s = ss.str();
 		if ( s != "" ) s.erase( s.length() - 1, 1 ); // remove the last | char
@@ -544,6 +548,12 @@ namespace citygml
 			COMPARECITYNAMEMASK( WaterBody );
 			COMPARECITYNAMEMASK( TINRelief );					 
 			COMPARECITYNAMEMASK( LandUse );
+			COMPARECITYNAMEMASK( Tunnel );
+			COMPARECITYNAMEMASK( Bridge );
+			COMPARECITYNAMEMASK( BridgeConstructionElement );
+			COMPARECITYNAMEMASK( BridgeInstallation );
+			COMPARECITYNAMEMASK( BridgePart );
+			COMPARECITYNAMEMASK( GenericCityObject );
 			COMPARECITYNAMEMASK( All );					
 		}
 #undef COMPARECITYNAMEMASK
@@ -566,11 +576,12 @@ namespace citygml
 				for ( int j = i+1; finish && j < (int)_geometries.size() - 1; j++ ) 
 				{
 					if ( !_geometries[i]->merge( _geometries[j] ) ) continue;
+
+					delete _geometries[j];
 					
 					//std::cout << " Obj : " << getId() << "... Geom " << _geometries[i]->getId() << " merged with " << _geometries[j]->getId() << std::endl;
 					_geometries.erase( _geometries.begin() + j );
 					finish = false;
-					break;
 				}
 			}
 		}
@@ -608,14 +619,16 @@ namespace citygml
 				it->second[i]->finish( _appearanceManager, optimize );
 
 		_appearanceManager.finish();
+		
+		Tesselator::destroy();
 	}
 
 	//////////////////////////////////////////////////////////////////////////////
 
-	Tesseletor::Tesseletor( unsigned int verticesCount, GLenum winding_rule )
-	{
-		_vertices.reserve( verticesCount );
+	Tesselator* Tesselator::_instance = NULL;
 
+	Tesselator::Tesselator( void )
+	{
 		_tobj = gluNewTess(); 
 
 		gluTessCallback( _tobj, GLU_TESS_VERTEX_DATA, (GLU_TESS_CALLBACK)&vertexCallback );
@@ -623,36 +636,43 @@ namespace citygml
 		gluTessCallback( _tobj, GLU_TESS_END_DATA, (GLU_TESS_CALLBACK)&endCallback );
 		gluTessCallback( _tobj, GLU_TESS_COMBINE_DATA, (GLU_TESS_CALLBACK)&combineCallback );
 		gluTessCallback( _tobj, GLU_TESS_ERROR_DATA, (GLU_TESS_CALLBACK)&errorCallback );
+	}
 
+	void Tesselator::init( unsigned int verticesCount, const TVec3d& normal, GLenum winding_rule )
+	{
 		gluTessBeginPolygon( _tobj, this ); 
 
 		gluTessProperty( _tobj, GLU_TESS_WINDING_RULE, winding_rule );
-
+		gluTessNormal( _tobj, normal.x, normal.y, normal.z );
+				
 		_vertices.clear();
+		_vertices.reserve( verticesCount );
+		_indices.clear();
+		_curIndices.clear();
 	}
 
-	Tesseletor::~Tesseletor( void ) 
+	Tesselator::~Tesselator( void ) 
 	{
 		gluDeleteTess( _tobj );
 	}
 
-	void Tesseletor::compute( void ) 
+	void Tesselator::compute( void ) 
 	{
 		gluTessEndPolygon( _tobj );  
 	}
 
-	void Tesseletor::addContour( const std::vector<TVec3d>& pts )
-	{
-		unsigned int pos = _vertices.size();
+	void Tesselator::addContour( const std::vector<TVec3d>& pts )
+	{		
 		unsigned int len = pts.size();
-
 		if ( len < 3 ) return;
 
+		unsigned int pos = _vertices.size();
+		
 		gluTessBeginContour( _tobj );
 
 		for ( unsigned int i = 0; i < len; i++ ) 
 		{
-			_vertices.push_back( pts[ i ] );
+			_vertices.push_back( pts[i] );
 
 			gluTessVertex( _tobj, &(_vertices[pos+i][0]), (void*)(pos+i) );
 		}
@@ -660,29 +680,29 @@ namespace citygml
 		gluTessEndContour( _tobj );
 	}
 
-	void CALLBACK Tesseletor::beginCallback( GLenum which, void* userData ) 
+	void CALLBACK Tesselator::beginCallback( GLenum which, void* userData ) 
 	{
-		Tesseletor *tess = (Tesseletor*)userData;
+		Tesselator *tess = (Tesselator*)userData;
 		tess->_curMode = which;
 	}
 
-	void CALLBACK Tesseletor::vertexCallback( GLvoid *data, void* userData ) 
+	void CALLBACK Tesselator::vertexCallback( GLvoid *data, void* userData ) 
 	{
-		Tesseletor *tess = (Tesseletor*)userData;
+		Tesselator *tess = (Tesselator*)userData;
 		tess->_curIndices.push_back( (int)data );
 	}
 
-	void CALLBACK Tesseletor::combineCallback( GLdouble coords[3], void* vertex_data[4], GLfloat weight[4], void** outData, void* userData )
+	void CALLBACK Tesselator::combineCallback( GLdouble coords[3], void* vertex_data[4], GLfloat weight[4], void** outData, void* userData )
 	{
-		Tesseletor *tess = (Tesseletor*)userData;
+		Tesselator *tess = (Tesselator*)userData;
 		unsigned int npoint = tess->_vertices.size();
 		tess->_vertices.push_back( TVec3d( coords[0], coords[1], coords[2] ) );
 		*outData = (void*)npoint;
 	}
 
-	void CALLBACK Tesseletor::endCallback( void* userData ) 
+	void CALLBACK Tesselator::endCallback( void* userData ) 
 	{
-		Tesseletor *tess = (Tesseletor*)userData;
+		Tesselator *tess = (Tesselator*)userData;
 
 		unsigned int len = tess->_curIndices.size();
 
@@ -714,13 +734,13 @@ namespace citygml
 				}
 			}
 			break;
-		default: std::cerr << "CityGML tesseletor: non-supported GLU tesselator primitive " << tess->_curMode << std::endl;
+		default: std::cerr << "CityGML tesselator: non-supported GLU tesselator primitive " << tess->_curMode << std::endl;
 		}
 		tess->_curIndices.clear();
 	}
 
-	void CALLBACK Tesseletor::errorCallback( GLenum errorCode, void* userData )
+	void CALLBACK Tesselator::errorCallback( GLenum errorCode, void* userData )
 	{
-		std::cerr << "CityGML tesseletor error: " << gluErrorString( errorCode ) << std::endl;
+		std::cerr << "CityGML tesselator error: " << gluErrorString( errorCode ) << std::endl;
 	}
 }

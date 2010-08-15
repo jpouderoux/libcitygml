@@ -83,7 +83,7 @@ public:
 		assert( sizeof(XMLByte) == sizeof(char) );
 		if ( !m_stream ) return 0;
 		m_stream.read( reinterpret_cast<char*>(buf), maxToRead );
-		return m_stream.gcount();
+		return (XMLSize_t)m_stream.gcount();
 	}
 
 	virtual const XMLCh* getContentType() const { return NULL; }

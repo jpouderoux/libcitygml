@@ -162,5 +162,4 @@ namespace citygml {
 
 		void* _geoTransform;
 	};
-
 }
