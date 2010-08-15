@@ -68,7 +68,7 @@ private:
 			std::string currentOption;
 			while ( iss >> currentOption )
 			{
-				std::transform( currentOption.begin(), currentOption.end(), currentOption.begin(), tolower );
+				std::transform( currentOption.begin(), currentOption.end(), currentOption.begin(), ::tolower );
 				if ( currentOption == "names" ) _printNames = true;
 				else if ( currentOption == "mask" ) iss >> _params.objectsMask;
 				else if ( currentOption == "minlod" ) iss >> _params.minLOD;
@@ -120,7 +120,7 @@ osgDB::ReaderWriter::ReadResult ReaderWriterCityGML::readNode( const std::string
 
 	citygml::CityModel *city = citygml::load( fileName, settings._params );
 
-	if ( !city ) return NULL;
+	if ( !city ) return 0;
 
 	osg::notify(osg::NOTICE) << city->size() << " city objects read." << std::endl;
 
@@ -132,12 +132,11 @@ osgDB::ReaderWriter::ReadResult ReaderWriterCityGML::readNode( const std::string
 #define RECURSIVE_DUMP
 
 #ifndef RECURSIVE_DUMP
-
 	const citygml::CityObjectsMap& cityObjectsMap = city->getCityObjectsMap();
 
 	citygml::CityObjectsMap::const_iterator it = cityObjectsMap.begin();
 
-	for ( ; it != cityObjectsMap.end(); it++ )
+	for ( ; it != cityObjectsMap.end(); ++it )
 	{
 		const citygml::CityObjects& v = it->second;
 
@@ -147,17 +146,12 @@ osgDB::ReaderWriter::ReadResult ReaderWriterCityGML::readNode( const std::string
 		grp->setName( citygml::getCityObjectsClassName( it->first ) );
 		root->addChild( grp );
 
-		for ( unsigned int i = 0; i < v.size(); i++ )
-
-			createCityObject( v[i], settings, grp ) )		
+		for ( unsigned int i = 0; i < v.size(); i++ ) createCityObject( v[i], settings, grp ) )		
 	}
 #else
-
 	const citygml::CityObjects& roots = city->getCityObjectsRoots();
 
-	for ( unsigned int i = 0; i < roots.size(); i++ ) 
-
-		createCityObject( roots[i], settings, root );
+	for ( unsigned int i = 0; i < roots.size(); i++ ) createCityObject( roots[i], settings, root );
 #endif
 
 	osg::notify(osg::NOTICE) << "Done." << std::endl;
@@ -283,7 +277,7 @@ bool ReaderWriterCityGML::createCityObject( const citygml::CityObject* object, S
 
 					if ( texCoords.size() > 0 )
 					{
-						osg::Texture2D* texture = NULL;
+						osg::Texture2D* texture = 0;
 
 						if ( settings._textureMap.find( t->getUrl() ) == settings._textureMap.end() )
 						{
@@ -362,8 +356,7 @@ bool ReaderWriterCityGML::createCityObject( const citygml::CityObject* object, S
 	}
 
 #ifdef RECURSIVE_DUMP
-	for ( unsigned int i = 0; i < object->getChildCount(); i++ ) 
-
+	for ( unsigned int i = 0; i < object->getChildCount(); i++ )
 		createCityObject( object->getChild(i), settings, grp );
 #endif
 

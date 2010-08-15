@@ -40,7 +40,7 @@ void usage()
 		<< "                  \"All&~Track&~Room\" to parse everything but tracks & rooms" << std::endl
 		<< "                  \"Road&Railway\" to parse only roads & railways" << std::endl;
 	std::cout << "  -destSRS <srs> Destination SRS (default: no transform)" << std::endl;
-	exit(-1);
+	exit( EXIT_FAILURE );
 }
 
 int main( int argc, char **argv )
@@ -80,7 +80,7 @@ int main( int argc, char **argv )
 	time_t end;
 	time( &end );
 
-	if ( !city ) return NULL;
+	if ( !city ) return EXIT_FAILURE;
 
 	std::cout << "Done in " << difftime( end, start ) << " seconds." << std::endl << city->size() << " city objects read." << std::endl;
 
@@ -119,7 +119,7 @@ int main( int argc, char **argv )
 
 	std::cout << "Done." << std::endl;
 
-	return 0;
+	return EXIT_SUCCESS;
 }
 
 void analyzeObject( const citygml::CityObject* object, unsigned int indent )
