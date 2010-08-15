@@ -14,8 +14,8 @@
 * GNU Lesser General Public License for more details.
 */
 
-#ifndef __PROJECTION_H__
-#define __PROJECTION_H__
+#ifndef __TRANSFORM_H__
+#define __TRANSFORM_H__
 
 #include "citygml.h"
 #ifdef USE_GDAL
@@ -82,4 +82,4 @@ private:
 	void* _trans;
 };
 
-#endif // __PROJECTION_H__
+#endif // __TRANSFORM_H__

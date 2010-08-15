@@ -165,14 +165,14 @@ _currentAppearance( NULL ), _currentLOD( params.minLOD ),
 _filterNodeType( false ), _filterDepth( 0 ), _exterior( true ), _geoTransform( NULL )
 { 
 	_objectsMask = getCityObjectsTypeMaskFromString( _params.objectsMask );
-	cityGMLInit(); 
+	initNodes(); 
 }
 
 CityGMLHandler::~CityGMLHandler( void ) 
 {
 }
 
-void CityGMLHandler::cityGMLInit( void ) 
+void CityGMLHandler::initNodes( void ) 
 {
 	if ( s_cityGMLNodeTypeMap.size() != 0 ) return;
 
@@ -333,28 +333,13 @@ CityGMLNodeType CityGMLHandler::getNodeTypeFromName( const std::string& name )
 ///////////////////////////////////////////////////////////////////////////////
 // Helpers
 
-template<class T> inline void parseValue( std::stringstream &s, T &v ) 
+template<class T> inline void parseValue( std::stringstream &s, T &v, GeoTransform* transform = NULL ) 
 {
 	if ( !s.eof() ) s >> v;
-}
-
-template<class T> inline void parseValue( std::stringstream &s, T &v, GeoTransform* transform ) 
-{
-	parseValue( s, v );
 	if ( transform ) transform->transform( v );
 }
 
-template<class T> inline void parseVecList( std::stringstream &s, std::vector<T> &vec ) 
-{
-	while ( !s.eof() )
-	{
-		T v;
-		s >> v;
-		vec.push_back( v );
-	}
-}
-
-template<class T> inline void parseVecList( std::stringstream &s, std::vector<T> &vec, GeoTransform* transform ) 
+template<class T> inline void parseVecList( std::stringstream &s, std::vector<T> &vec, GeoTransform* transform = NULL ) 
 {
 	while ( !s.eof() )
 	{
@@ -378,7 +363,7 @@ std::string CityGMLHandler::getNodeName( const std::string& name )
 
 	for ( int i = s_knownNamespace.size() - 1; i >= 0; i-- ) 
 		if ( nspace == s_knownNamespace[i] ) 
-			return  name.substr( s_knownNamespace[i].length() + 1 );
+			return name.substr( s_knownNamespace[i].length() + 1 );
 
 	return name;
 }
@@ -527,29 +512,6 @@ void CityGMLHandler::startElement( const std::string& name, void* attributes )
 	default:
 		break;
 	};
-}
-
-void CityGMLHandler::createGeoTransform( std::string srsName )
-{	
-	if ( srsName == "" ) return; 
-	// Manage URN composition and retain only the first SRS
-	// ie. transform: urn:ogc:def:crs,crs:EPSG:6.12:3068,crs:EPSG:6.12:5783
-	// to urn:ogc:def:crs:EPSG:6.12:3068
-	std::vector<std::string> tokens = tokenize( srsName, "," );
-	if ( tokens.size() > 1 )
-	{
-		std::string::size_type p = tokens[1].find( ':' );
-		srsName = ( p != std::string::npos ) ? tokens[0] + tokens[1].substr( p ) : srsName = tokens[0] + tokens[1];		
-	}
-
-	if ( _model->_srsName == "" ) _model->_srsName = srsName;
-
-	if ( srsName != _model->_srsName ) { std::cerr << "Warning: More than one SRS is defined. The SRS " << srsName << " is declared while the scene SRS has been set to " << _model->_srsName << std::endl; return; }
-
-	if ( _params.destSRS == "" ) return;
-	
-	delete (GeoTransform*)_geoTransform;
-	_geoTransform = new GeoTransform( srsName, _params.destSRS );
 }
 
 void CityGMLHandler::endElement( const std::string& name ) 
@@ -800,4 +762,27 @@ void CityGMLHandler::endElement( const std::string& name )
 	};
 
 	clearBuffer();
+}
+
+void CityGMLHandler::createGeoTransform( std::string srsName )
+{	
+	if ( srsName == "" ) return; 
+	// Manage URN composition and retain only the first SRS
+	// ie. transform: urn:ogc:def:crs,crs:EPSG:6.12:3068,crs:EPSG:6.12:5783
+	// to urn:ogc:def:crs:EPSG:6.12:3068
+	std::vector<std::string> tokens = tokenize( srsName, "," );
+	if ( tokens.size() > 1 )
+	{
+		std::string::size_type p = tokens[1].find( ':' );
+		srsName = ( p != std::string::npos ) ? tokens[0] + tokens[1].substr( p ) : srsName = tokens[0] + tokens[1];		
+	}
+
+	if ( _model->_srsName == "" ) _model->_srsName = srsName;
+
+	if ( srsName != _model->_srsName ) { std::cerr << "Warning: More than one SRS is defined. The SRS " << srsName << " is declared while the scene SRS has been set to " << _model->_srsName << std::endl; return; }
+
+	if ( _params.destSRS == "" ) return;
+	
+	delete (GeoTransform*)_geoTransform;
+	_geoTransform = new GeoTransform( srsName, _params.destSRS );
 }

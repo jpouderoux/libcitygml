@@ -19,6 +19,10 @@
 //  http://www.citygml.org/citygml/1/0/0/CityGML.xsd
 //  http://www.citygml.org/fileadmin/citygml/docs/CityGML_1_0_0_UML_diagrams.pdf
 
+
+#ifndef __PARSER_H__
+#define __PARSER_H__
+
 #include "citygml.h"
 
 #include <string>
@@ -57,8 +61,6 @@ namespace citygml {
 
 	protected:
 
-		std::string getNodeName( const std::string& );
-
 		inline int searchInNodePath( const std::string& name ) const 
 		{
 			for ( int i = _nodePath.size() - 1; i >= 0; i-- )
@@ -74,41 +76,27 @@ namespace citygml {
 			return ss.str();
 		}
 
-		inline std::string getPrevNode( void ) const 
+		inline std::string getPrevNode( void ) const { return _nodePath.size() > 2 ? _nodePath[ _nodePath.size() - 2 ] : ""; }
+
+		inline unsigned int getPathDepth( void ) const { return _nodePath.size(); }
+
+		inline CityGMLNodeType getPrevNodeType( void ) const { return getNodeTypeFromName( getPrevNode() ); }
+
+		inline void clearBuffer( void ) { _buff.str(""); _buff.clear(); }  
+		
+		inline void pushCityObject( CityObject* object )
 		{
-			return _nodePath.size() > 2 ? _nodePath[ _nodePath.size() - 2 ] : "";
-		}
-
-		inline unsigned int getPathDepth( void ) const 
-		{
-			return _nodePath.size();
-		}
-
-		inline CityGMLNodeType getPrevNodeType( void ) const 
-		{
-			return getNodeTypeFromName( getPrevNode() );
-		}
-
-		inline void clearBuffer() { _buff.str(""); _buff.clear(); }  
-
-		static void cityGMLInit( void );
-
-		static CityGMLNodeType getNodeTypeFromName( const std::string& );
-
-		inline void pushCityObject( CityObject* object ) {
-
 			if ( _currentCityObject && object ) _currentCityObject->getChildren().push_back( object );
 			_cityObjectStack.push( _currentCityObject );
 			_currentCityObject = object;
 		}
 
-		inline void popCityObject( void ) {
-
+		inline void popCityObject( void )
+		{
 			_currentCityObject = NULL; 
-			if ( !_cityObjectStack.empty() ) {
-				_currentCityObject = _cityObjectStack.top(); 
-				_cityObjectStack.pop();
-			}
+			if ( _cityObjectStack.empty() ) return; 
+			_currentCityObject = _cityObjectStack.top(); 
+			_cityObjectStack.pop();
 		}
 
 		virtual std::string getAttribute( void* attributes, const std::string& attname, const std::string& defvalue = "" ) = 0;
@@ -116,6 +104,12 @@ namespace citygml {
 		inline std::string getGmlIdAttribute( void* attributes ) { return getAttribute( attributes, "gml:id", "" ); }
 
 		void createGeoTransform( std::string );
+		
+		static void initNodes( void );
+
+		static std::string getNodeName( const std::string& );
+
+		static CityGMLNodeType getNodeTypeFromName( const std::string& );
 
 	protected:
 
@@ -163,3 +157,5 @@ namespace citygml {
 		void* _geoTransform;
 	};
 }
+
+#endif __PARSER_H__
