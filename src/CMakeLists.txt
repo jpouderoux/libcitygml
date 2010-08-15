@@ -61,6 +61,7 @@ SET( LIB_SRCS
 	parser.cpp
 	parserxercesc.cpp
 	parserlibxml2.cpp
+	tesselator.cpp
 )
 
 SET( LIB_PUBLIC_HEADERS
@@ -68,6 +69,8 @@ SET( LIB_PUBLIC_HEADERS
 	../include/vecs.h
 	./parser.h
 	./transform.h
+	./tesselator.h
+	./utils.h
 )
 
 ADD_LIBRARY( ${LIB_NAME} ${LIBCITYGML_USER_DEFINED_DYNAMIC_OR_STATIC} ${LIB_SRCS} ${LIB_PUBLIC_HEADERS} )
