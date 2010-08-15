@@ -228,7 +228,7 @@ namespace citygml
 		if ( _vertices.empty() || _indices.size() < 3 ) 
 		{
 			//std::cout << "Warning: Unable to compute normal on polygon " << getId() << "!" << std::endl;
-			return TVec3f();
+			return TVec3d();
 		}
 
 		const TVec3d& p1 = _vertices[_indices[0]];
