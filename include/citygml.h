@@ -95,8 +95,8 @@ namespace citygml
 	// tesselate: convert the interior & exteriors polygons to triangles
 	// destSRS: the SRS (WKT, EPSG, OGC URN, etc.) where the coordinates must be transformed, default ("") is no transformation
 
-	class ParserParams {
-
+	class ParserParams
+	{
 	public:
 		ParserParams( void ) : objectsMask( "All" ), minLOD( 0 ), maxLOD( 4 ), optimize( false ), pruneEmptyObjects( false ), tesselate( true ), destSRS( "" ) { }
 
@@ -143,7 +143,7 @@ namespace citygml
 		friend class CityGMLHandler;
 		friend std::ostream& operator<<( std::ostream&, const Object & );
 	public:
-		Object( const std::string& id ) { if ( id != "" ) _id = id; else { std::stringstream ss; ss << "PtrId_" << this; _id = ss.str(); } }
+		Object( const std::string& id ) : _id( id ) { if ( _id != "" ) { std::stringstream ss; ss << "PtrId_" << this; _id = ss.str(); } }
 
 		virtual ~Object( void ) {}
 
@@ -238,14 +238,14 @@ namespace citygml
 		friend class CityGMLHandler;
 		friend class CityModel;
 	public:
-		AppearanceManager( void ) : _lastId( "" ), _lastCoords( NULL ) {}
+		AppearanceManager( void ) : _lastId( "" ), _lastCoords( 0 ) {}
 
 		~AppearanceManager( void );
 
 		inline Appearance* getAppearance( const std::string& nodeid ) const
 		{
 			std::map<std::string, Appearance*>::const_iterator it = _appearanceMap.find( nodeid );
-			return ( it != _appearanceMap.end() ) ? it->second : NULL;
+			return ( it != _appearanceMap.end() ) ? it->second : 0;
 		}
 
 		inline bool getTexCoords( const std::string& nodeid, TexCoords &texCoords) const
@@ -316,7 +316,7 @@ namespace citygml
 		friend class Tesseletor;
 		friend class CityModel;
 	public:
-		Polygon( const std::string& id ) : Object( id ), _indices( NULL ),  _appearance( NULL ), _texCoords( NULL ), _exteriorRing( NULL ), _negNormal( false ) {}
+		Polygon( const std::string& id ) : Object( id ), _appearance( 0 ), _exteriorRing( 0 ), _negNormal( false ), _geometry( 0 ) {}
 
 		LIBCITYGML_EXPORT ~Polygon( void );
 
@@ -432,7 +432,7 @@ namespace citygml
 		virtual ~CityObject()
 		{ 
 			std::vector< Geometry* >::const_iterator it = _geometries.begin();
-			for ( ; it != _geometries.end(); it++ ) delete *it;
+			for ( ; it != _geometries.end(); ++it ) delete *it;
 		}
 
 		// Get the object type
@@ -455,7 +455,7 @@ namespace citygml
 		// Access the children
 		inline unsigned int getChildCount( void ) const { return _children.size(); }
 
-		inline const CityObject* getChild( unsigned int i ) const { return _children[i]; }
+		inline const CityObject* getChild( unsigned int i ) const { return ( i < getChildCount() ) ? _children[i] : 0; }
 
 		inline std::vector< CityObject* >& getChildren( void ) { return _children; }
 
@@ -532,8 +532,8 @@ namespace citygml
 	public:
 		LandUse( const std::string& id ) : CityObject( id, COT_LandUse ) {}
 
-		inline TVec4f getDefaultColor( void ) const { 
-
+		inline TVec4f getDefaultColor( void ) const
+		{ 
 			std::string c = getProp( "class" );
 			if ( c != "" )
 			{
@@ -550,6 +550,7 @@ namespace citygml
 			return MAKE_RGB( 10, 230, 1 ); 
 		}
 	};
+
 	///////////////////////////////////////////////////////////////////////////////
 
 	typedef std::vector< CityObject* > CityObjects;
@@ -571,7 +572,7 @@ namespace citygml
 		{ 
 			unsigned int count = 0;
 			CityObjectsMap::const_iterator it = _cityObjectsMap.begin();
-			for ( ; it != _cityObjectsMap.end(); it++ ) count += it->second.size();
+			for ( ; it != _cityObjectsMap.end(); ++it ) count += it->second.size();
 			return count; 
 		}
 
@@ -580,8 +581,7 @@ namespace citygml
 		inline const CityObjects* getCityObjectsByType( CityObjectsType type ) const
 		{ 
 			CityObjectsMap::const_iterator it = _cityObjectsMap.find( type );
-			if ( it == _cityObjectsMap.end() ) return NULL;
-			return &it->second; 
+			return ( it != _cityObjectsMap.end() ) ? &it->second : 0;
 		}
 
 		// Return the roots elements of the model. You can then navigate the hierarchy using object->getChildren().

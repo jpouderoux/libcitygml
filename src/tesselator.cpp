@@ -19,7 +19,7 @@
 
 #include "tesselator.h"
 
-Tesselator* Tesselator::_instance = NULL;
+Tesselator* Tesselator::_instance = 0;
 
 Tesselator::Tesselator( void )
 {

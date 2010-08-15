@@ -31,6 +31,7 @@ class Tesselator
 {		
 public:
 	static Tesselator* getInstance( void ) { if ( !_instance ) _instance = new Tesselator(); return _instance; }
+
 	static void destroy( void ) { delete _instance; _instance = 0; }
 
 	void init( unsigned int verticesCount, const TVec3d& normal, GLenum winding_rule = GLU_TESS_WINDING_ODD );

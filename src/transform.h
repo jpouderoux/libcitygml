@@ -30,11 +30,11 @@ public:
 #ifdef USE_GDAL
 		_sourceSRS = getProjection( _sourceURN );
 		_destSRS = getProjection( _destURN );
-		_trans = ( _sourceSRS && _destSRS ) ? OGRCreateCoordinateTransformation( (OGRSpatialReference*)_sourceSRS, (OGRSpatialReference*)_destSRS ) : NULL;
+		_trans = ( _sourceSRS && _destSRS ) ? OGRCreateCoordinateTransformation( (OGRSpatialReference*)_sourceSRS, (OGRSpatialReference*)_destSRS ) : 0;
 #else
-		_sourceSRS = NULL;
-		_destSRS = NULL;
-		_trans = NULL;
+		_sourceSRS = 0;
+		_destSRS = 0;
+		_trans = 0;
 #endif
 	}
 
@@ -61,16 +61,14 @@ public:
 #ifdef USE_GDAL
 	static void* getProjection( const std::string &str )
 	{
-		OGRSpatialReference* proj = (OGRSpatialReference*)OSRNewSpatialReference(NULL);
+		OGRSpatialReference* proj = (OGRSpatialReference*)OSRNewSpatialReference(0);
 		OGRErr err = proj->SetFromUserInput( str.c_str() );
-		if ( err != OGRERR_NONE )
-		{
-			delete proj; 
-			proj = NULL;
-			std::cerr << "Error : Unable to create projection from definition " << str << " (error code: " << err << ")" << std::endl;
-			std::cerr << "        Did you correctly set the GDAL_DATA env. var?" << std::endl;
-		}
-		return proj;
+		if ( err == OGRERR_NONE ) return proj;
+
+		delete proj; 
+		std::cerr << "Error : Unable to create projection from definition " << str << " (error code: " << err << ")" << std::endl
+			<< "        Did you correctly set the GDAL_DATA env. var?" << std::endl;
+		return 0;
 	}
 #endif
 

@@ -86,7 +86,7 @@ public:
 		return (XMLSize_t)m_stream.gcount();
 	}
 
-	virtual const XMLCh* getContentType() const { return NULL; }
+	virtual const XMLCh* getContentType() const { return 0; }
 
 private:
 	std::istream& m_stream;
@@ -107,8 +107,8 @@ private:
 };
 
 // Parsing methods
-namespace citygml {
-
+namespace citygml
+{
 	CityModel* load( std::istream& stream, const ParserParams& params )
 	{
 		try 
@@ -128,7 +128,7 @@ namespace citygml {
 		parser->setDocumentHandler( handler );
 		parser->setErrorHandler( handler );
 
-		CityModel* model = NULL;
+		CityModel* model = 0;
 
 		try 
 		{
@@ -161,7 +161,7 @@ namespace citygml {
 	{
 		std::ifstream file;
 		file.open( fname.c_str(), std::ifstream::in );
-		if ( file.fail() ) { std::cerr << "CityGML: Unable to open file " << fname << "!" << std::endl; return NULL; }
+		if ( file.fail() ) { std::cerr << "CityGML: Unable to open file " << fname << "!" << std::endl; return 0; }
 		CityModel* model = load( file, params );
 		file.close();
 		return model;

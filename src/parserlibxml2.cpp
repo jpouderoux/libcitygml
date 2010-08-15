@@ -31,7 +31,6 @@ using namespace citygml;
 class CityGMLHandlerLibXml2 : public CityGMLHandler
 {
 public:
-
 	CityGMLHandlerLibXml2( const ParserParams& params ) : CityGMLHandler( params ) {}
 
 	void startElement( const xmlChar* name, const xmlChar** attrs ) 
@@ -59,7 +58,7 @@ protected:
 	{
 		const xmlChar **attrs = (const xmlChar**)attributes;
 		if ( !attrs ) return defvalue;
-		for ( int i = 0; attrs[i] != NULL; i += 2 ) 
+		for ( int i = 0; attrs[i] != 0; i += 2 ) 
 			if ( wstos( attrs[i] ) == attname ) return wstos( attrs[ i + 1 ] );
 		return defvalue;
 	}
@@ -100,7 +99,7 @@ void fatalError( void *user_data, const char *msg, ... )
 	_xmlParserCtxt* context = static_cast<_xmlParserCtxt*>(user_data);
 	std::string error = "Parsing error!";
 
-	va_list args = NULL;
+	va_list args = 0;
 	va_start( args, msg );
 	size_t len = _vscprintf( msg, args ) + 1;
 	std::vector<char> buffer( len, '\0' );
@@ -112,13 +111,13 @@ void fatalError( void *user_data, const char *msg, ... )
 }
 
 // Parsing methods
-namespace citygml {
-
+namespace citygml
+{
 	CityModel* load( std::istream& stream, const ParserParams& params )
 	{
 		CityGMLHandlerLibXml2* handler = new CityGMLHandlerLibXml2( params );
 
-		xmlSAXHandler sh = { NULL };
+		xmlSAXHandler sh = { 0 };
 		sh.startDocument = startDocument;
 		sh.endDocument = endDocument;
 		sh.startElement = startElement;
@@ -127,12 +126,12 @@ namespace citygml {
 		sh.error = fatalError;
 		sh.fatalError = fatalError;
 
-		xmlParserCtxtPtr context = xmlCreatePushParserCtxt( &sh, NULL, 0, 0, "" );
-		if ( context == NULL ) 
+		xmlParserCtxtPtr context = xmlCreatePushParserCtxt( &sh, 0, 0, 0, "" );
+		if ( context == 0 ) 
 		{
 			std::cerr << "CityGML: Unable to create LibXml2 context!" << std::endl;
 			delete handler;
-			return NULL;
+			return 0;
 		}	
 
 		context->_private = handler;
@@ -168,7 +167,7 @@ namespace citygml {
 	{
 		CityGMLHandlerLibXml2* handler = new CityGMLHandlerLibXml2( params );
 
-		xmlSAXHandler sh = { NULL };
+		xmlSAXHandler sh = { 0 };
 		sh.startDocument = startDocument;
 		sh.endDocument = endDocument;
 		sh.startElement = startElement;
@@ -178,11 +177,11 @@ namespace citygml {
 		sh.fatalError = fatalError;
 
 		xmlParserCtxtPtr context = xmlCreateFileParserCtxt( fname.c_str() );
-		if ( context == NULL ) 
+		if ( context == 0 ) 
 		{
 			std::cerr << "CityGML: Unable to create LibXml2 context!" << std::endl;
 			delete handler;
-			return NULL;
+			return 0;
 		}	
 
 		context->_private = handler;
