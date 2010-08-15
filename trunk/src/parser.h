@@ -30,8 +30,8 @@
 #include <stack>
 #include <fstream>
 
-namespace citygml {
-	
+namespace citygml
+{	
 	typedef enum CityGMLNodeType;
 	
 	// CityGML SAX parsing handler
@@ -93,7 +93,7 @@ namespace citygml {
 
 		inline void popCityObject( void )
 		{
-			_currentCityObject = NULL; 
+			_currentCityObject = 0; 
 			if ( _cityObjectStack.empty() ) return; 
 			_currentCityObject = _cityObjectStack.top(); 
 			_cityObjectStack.pop();

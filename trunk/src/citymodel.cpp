@@ -78,7 +78,7 @@ namespace citygml
 
 		CityObjectsMap::const_iterator it = cityObjectsMap.begin();
 
-		for ( ; it != cityObjectsMap.end(); it++ )
+		for ( ; it != cityObjectsMap.end(); ++it )
 
 			for ( unsigned int i = 0; i < it->second.size(); i++ ) out << *(it->second[i]);
 
@@ -132,7 +132,7 @@ namespace citygml
 		for ( unsigned int i = 0; i < _appearances.size(); i++ ) delete _appearances[i];
 
 		std::map<std::string, TexCoords*>::iterator it = _texCoordsMap.begin();
-		for ( ; it != _texCoordsMap.end(); it++ ) delete it->second;
+		for ( ; it != _texCoordsMap.end(); ++it ) delete it->second;
 	}
 
 	void AppearanceManager::addAppearance( Appearance* app ) 
@@ -168,28 +168,15 @@ namespace citygml
 	{ 
 		delete _exteriorRing;
 		std::vector< LinearRing* >::const_iterator it = _interiorRings.begin();
-		for ( ; it != _interiorRings.end(); it++ ) delete *it;
+		for ( ; it != _interiorRings.end(); ++it ) delete *it;
 	}
 
 	TVec3d Polygon::computeNormal( void ) 
 	{
-#ifndef TESSNORMALS
 		if ( !_exteriorRing ) return TVec3d();
 
 		TVec3d normal = _exteriorRing->computeNormal();
-#else
-		if ( _vertices.empty() || _indices.size() < 3 ) 
-		{
-			//std::cout << "Warning: Unable to compute normal on polygon " << getId() << "!" << std::endl;
-			return TVec3d();
-		}
 
-		const TVec3d& p1 = _vertices[_indices[0]];
-		const TVec3d& p2 = _vertices[_indices[1]];
-		const TVec3d& p3 = _vertices[_indices[2]];
-
-		TVec3d normal = ( ( p2 - p1 ).cross( p3 - p1 ) ).normal();
-#endif
 		return _negNormal ? -normal : normal;
 	}
 
@@ -260,7 +247,7 @@ namespace citygml
 	void Polygon::clearRings( void )
 	{
 		delete _exteriorRing;
-		_exteriorRing = NULL;
+		_exteriorRing = 0;
 		for ( unsigned int i = 0; i < _interiorRings.size(); i++ ) delete _interiorRings[i]; 
 		_interiorRings.clear();
 	}
@@ -320,14 +307,10 @@ namespace citygml
 
 	void Polygon::finish( bool doTesselate ) 
 	{
-#ifndef TESSNORMALS
 		TVec3d normal = computeNormal();
 		if ( doTesselate ) tesselate( normal );	else mergeRings();
-#else
-		if ( doTesselate ) tesselate( TVec3d() );	else mergeRings();
-		normal = computeNormal();
-#endif
-		// Save the normal per point field
+
+		// Create the normal per point field
 		_normals.resize( _vertices.size() );
 		for ( unsigned int i = 0; i < _vertices.size(); i++ )
 			_normals[i] = TVec3f( (float)normal.x, (float)normal.y, (float)normal.z );
@@ -357,7 +340,7 @@ namespace citygml
 	Geometry::~Geometry() 
 	{ 
 		std::vector< Polygon* >::const_iterator it = _polygons.begin();
-		for ( ; it != _polygons.end(); it++ ) delete *it;
+		for ( ; it != _polygons.end(); ++it ) delete *it;
 	}
 
 	void Geometry::addPolygon( Polygon* p ) 
@@ -370,22 +353,19 @@ namespace citygml
 	{
 		Appearance* myappearance = appearanceManager.getAppearance( getId() );
 		std::vector< Polygon* >::const_iterator it = _polygons.begin();
-		for ( ; it != _polygons.end(); it++ ) (*it)->finish( appearanceManager, myappearance ? myappearance : defAppearance );
+		for ( ; it != _polygons.end(); ++it ) (*it)->finish( appearanceManager, myappearance ? myappearance : defAppearance );
 
 		bool finish = false;
 		while ( !finish && optimize ) 
-		{
+		{			
 			finish = true;
-			
-			for ( int i = 0; finish && i < (int)_polygons.size() - 1; i++ ) 
+			int len = (int)_polygons.size();			
+			for ( int i = 0; finish && i < len - 1; i++ ) 
 			{
-				for ( int j = i+1; finish && j < (int)_polygons.size() - 1; j++ ) 
+				for ( int j = i+1; finish && j < len - 1; j++ ) 
 				{
 					if ( !_polygons[i]->merge( _polygons[j] ) ) continue;
-
 					delete _polygons[j];
-
-					//std::cout << " Geom : " << getId() << "... Poly " << _polygons[i]->getId() << " merged with " << _polygons[j]->getId() << std::endl;
 					_polygons.erase( _polygons.begin() + j );
 					finish = false;		
 				}
@@ -491,21 +471,19 @@ namespace citygml
 	{
 		Appearance* myappearance = appearanceManager.getAppearance( getId() );
 		std::vector< Geometry* >::const_iterator it = _geometries.begin();
-		for ( ; it != _geometries.end(); it++ ) (*it)->finish( appearanceManager, myappearance ? myappearance : NULL, optimize );
+		for ( ; it != _geometries.end(); ++it ) (*it)->finish( appearanceManager, myappearance ? myappearance : 0, optimize );
 
 		bool finish = false;
 		while ( !finish && optimize ) 
 		{
 			finish = true;
-			for ( int i = 0; finish && i < (int) _geometries.size() - 2; i++ ) 
+			int len = _geometries.size();
+			for ( int i = 0; finish && i < len - 2; i++ ) 
 			{
-				for ( int j = i+1; finish && j < (int)_geometries.size() - 1; j++ ) 
+				for ( int j = i+1; finish && j < len - 1; j++ ) 
 				{
 					if ( !_geometries[i]->merge( _geometries[j] ) ) continue;
-
-					delete _geometries[j];
-					
-					//std::cout << " Obj : " << getId() << "... Geom " << _geometries[i]->getId() << " merged with " << _geometries[j]->getId() << std::endl;
+					delete _geometries[j];					
 					_geometries.erase( _geometries.begin() + j );
 					finish = false;
 				}
@@ -518,7 +496,7 @@ namespace citygml
 	CityModel::~CityModel( void ) 
 	{ 	
 		CityObjectsMap::const_iterator it = _cityObjectsMap.begin();
-		for ( ; it != _cityObjectsMap.end(); it++ ) 
+		for ( ; it != _cityObjectsMap.end(); ++it ) 
 			for ( unsigned int i = 0; i < it->second.size(); i++ )
 				delete it->second[i];
 	}
@@ -540,7 +518,7 @@ namespace citygml
 	{
 		// Assign appearances to cityobjects => geometries => polygons
 		CityObjectsMap::const_iterator it = _cityObjectsMap.begin();
-		for ( ; it != _cityObjectsMap.end(); it++ ) 
+		for ( ; it != _cityObjectsMap.end(); ++it ) 
 			for ( unsigned int i = 0; i < it->second.size(); i++ )
 				it->second[i]->finish( _appearanceManager, optimize );
 

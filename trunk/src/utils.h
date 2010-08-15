@@ -23,14 +23,14 @@
 
 // Helpers
 
-// std::string tokenizer helper
+// std::string tokenizer
 inline std::vector<std::string> tokenize( const std::string& str, const std::string& delimiters = ",|& " )
 {
 	std::vector<std::string> tokens;
 	std::string::size_type lastPos = str.find_first_not_of( delimiters, 0 );
 	std::string::size_type pos = str.find_first_of( delimiters, lastPos );
 
-	while ( std::string::npos != pos || std::string::npos != lastPos )
+	while ( pos != std::string::npos || lastPos != std::string::npos )
 	{
 		tokens.push_back( str.substr( lastPos, pos - lastPos ) );
 		lastPos = str.find_first_not_of( delimiters, pos );
@@ -58,8 +58,7 @@ inline std::string trim_right( const std::string& s, const std::string& t = " \t
 {
 	std::string d( s ); 
 	size_t endpos = d.find_last_not_of( t );
-	if ( endpos != std::string::npos ) return d.erase( endpos + 1 );
-	return d;
+	return ( endpos != std::string::npos ) ? d.erase( endpos + 1 ) : d;
 }
 
 inline std::string trim( const std::string& s, const std::string& t = " \t\r\n" )

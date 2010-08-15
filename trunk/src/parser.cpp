@@ -27,7 +27,8 @@ using namespace citygml;
 
 #define NODETYPE(_t_) CG_ ## _t_
 
-namespace citygml {
+namespace citygml
+{
 	// CityGML node types
 	typedef enum CityGMLNodeType
 	{
@@ -159,10 +160,10 @@ std::map<std::string, CityGMLNodeType> CityGMLHandler::s_cityGMLNodeTypeMap;
 std::vector< std::string > CityGMLHandler::s_knownNamespace;
 
 CityGMLHandler::CityGMLHandler( const ParserParams& params ) 
-: _params( params ), _model( NULL ), _currentCityObject( NULL ), 
-_currentGeometry( NULL ), _currentPolygon( NULL ), _currentRing( NULL ),  _currentGeometryType( GT_Unknown ),
-_currentAppearance( NULL ), _currentLOD( params.minLOD ), 
-_filterNodeType( false ), _filterDepth( 0 ), _exterior( true ), _geoTransform( NULL )
+: _params( params ), _model( 0 ), _currentCityObject( 0 ), 
+_currentGeometry( 0 ), _currentPolygon( 0 ), _currentRing( 0 ),  _currentGeometryType( GT_Unknown ),
+_currentAppearance( 0 ), _currentLOD( params.minLOD ), 
+_filterNodeType( false ), _filterDepth( 0 ), _exterior( true ), _geoTransform( 0 )
 { 
 	_objectsMask = getCityObjectsTypeMaskFromString( _params.objectsMask );
 	initNodes(); 
@@ -333,13 +334,28 @@ CityGMLNodeType CityGMLHandler::getNodeTypeFromName( const std::string& name )
 ///////////////////////////////////////////////////////////////////////////////
 // Helpers
 
-template<class T> inline void parseValue( std::stringstream &s, T &v, GeoTransform* transform = NULL ) 
+template<class T> inline void parseValue( std::stringstream &s, T &v ) 
 {
 	if ( !s.eof() ) s >> v;
+}
+
+template<class T> inline void parseValue( std::stringstream &s, T &v, GeoTransform* transform ) 
+{
+	parseValue( s, v );
 	if ( transform ) transform->transform( v );
 }
 
-template<class T> inline void parseVecList( std::stringstream &s, std::vector<T> &vec, GeoTransform* transform = NULL ) 
+template<class T> inline void parseVecList( std::stringstream &s, std::vector<T> &vec ) 
+{
+	while ( !s.eof() )
+	{
+		T v;
+		s >> v;
+		vec.push_back( v );
+	}
+}
+
+template<class T> inline void parseVecList( std::stringstream &s, std::vector<T> &vec, GeoTransform* transform ) 
 {
 	while ( !s.eof() )
 	{
@@ -398,7 +414,7 @@ void CityGMLHandler::startElement( const std::string& name, void* attributes )
 	case CG_ ## _t_ :\
 	if ( _objectsMask & COT_ ## _t_ )\
 		{ pushCityObject( new _t_( getGmlIdAttribute( attributes ) ) ); /*std::cout << "new "<< #_t_ " - " << _currentCityObject->getId() << std::endl;*/ }\
-	else { pushCityObject( NULL ); _filterNodeType = true; _filterDepth = getPathDepth(); }\
+	else { pushCityObject( 0 ); _filterNodeType = true; _filterDepth = getPathDepth(); }\
 	break;
 
 		MANAGE_OBJECT( GenericCityObject );
@@ -645,7 +661,7 @@ void CityGMLHandler::endElement( const std::string& name )
 			_currentCityObject->_geometries.push_back( _currentGeometry );
 		else 
 			delete _currentGeometry;
-		_currentGeometry = NULL;
+		_currentGeometry = 0;
 		break;
 
 	case NODETYPE( Triangle ):
@@ -655,7 +671,7 @@ void CityGMLHandler::endElement( const std::string& name )
 			_currentPolygon->finish( ( nodeType == NODETYPE( Triangle ) ) ? false : _params.tesselate );							
 			_currentGeometry->addPolygon( _currentPolygon );
 		}
-		_currentPolygon = NULL;
+		_currentPolygon = 0;
 		break;
 
 	case NODETYPE( pos ):
@@ -684,7 +700,7 @@ void CityGMLHandler::endElement( const std::string& name )
 	case NODETYPE( LinearRing ): 
 		if ( _currentPolygon && _currentRing ) 
 			_currentPolygon->addRing( _currentRing );	
-		_currentRing = NULL;
+		_currentRing = 0;
 		break;
 
 		// Material management
@@ -728,7 +744,7 @@ void CityGMLHandler::endElement( const std::string& name )
 	case NODETYPE( X3DMaterial ):
 		if ( _currentAppearance && _currentGeometry && !_appearanceAssigned )
 			_model->_appearanceManager.assignNode( _currentGeometry->getId() );
-		_currentAppearance = NULL;
+		_currentAppearance = 0;
 		break;
 
 	case NODETYPE( diffuseColor ):
