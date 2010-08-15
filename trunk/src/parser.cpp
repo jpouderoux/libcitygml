@@ -21,6 +21,7 @@
 
 #include "parser.h"
 #include "transform.h"
+#include "utils.h"
 
 using namespace citygml;
 
@@ -332,25 +333,6 @@ CityGMLNodeType CityGMLHandler::getNodeTypeFromName( const std::string& name )
 ///////////////////////////////////////////////////////////////////////////////
 // Helpers
 
-inline std::string trim_left( const std::string& s, const std::string& t = " \t\r\n" ) 
-{ 
-	std::string d( s ); 
-	return d.erase( 0, s.find_first_not_of( t ) ); 
-} 
-
-inline std::string trim_right( const std::string& s, const std::string& t = " \t\r\n" )
-{
-	std::string d( s ); 
-	size_t endpos = d.find_last_not_of( t );
-	if ( endpos != std::string::npos ) return d.erase( endpos + 1 );
-	return d;
-}
-
-inline std::string trim( const std::string& s, const std::string& t = " \t\r\n" )
-{
-	return trim_left( trim_right( s, t ), t );
-}
-
 template<class T> inline void parseValue( std::stringstream &s, T &v ) 
 {
 	if ( !s.eof() ) s >> v;
@@ -553,7 +535,7 @@ void CityGMLHandler::createGeoTransform( std::string srsName )
 	// Manage URN composition and retain only the first SRS
 	// ie. transform: urn:ogc:def:crs,crs:EPSG:6.12:3068,crs:EPSG:6.12:5783
 	// to urn:ogc:def:crs:EPSG:6.12:3068
-	std::vector<std::string> tokens = citygml::tokenize( srsName, "," );
+	std::vector<std::string> tokens = tokenize( srsName, "," );
 	if ( tokens.size() > 1 )
 	{
 		std::string::size_type p = tokens[1].find( ':' );

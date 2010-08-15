@@ -615,8 +615,6 @@ namespace citygml
 	std::ostream& operator<<( std::ostream&, const citygml::Geometry& );
 	std::ostream& operator<<( std::ostream&, const citygml::CityObject& );
 	std::ostream& operator<<( std::ostream&, const citygml::CityModel & );
-
-	std::vector<std::string> tokenize( const std::string& str, const std::string& delimiters = ",|& " );
 }
 
 #endif // __CITYGML_H__

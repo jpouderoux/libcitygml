@@ -17,15 +17,10 @@
  * GNU Lesser General Public License for more details.
 */
 
-#ifdef WIN32
-#	include <windows.h>
-#else
-#	define CALLBACK
-#endif
-#include "GL/glu.h"
+#include "tesselator.h"
 #include "citygml.h"
+#include "utils.h"
 
-#include <algorithm>
 #include <iterator>
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -166,49 +161,7 @@ namespace citygml
 		_lastId = "";
 		return true;
 	}
-
-	///////////////////////////////////////////////////////////////////////////
-	// GLU based polygon tesselator
-	class Tesselator 
-	{		
-	public:
-		static Tesselator* getInstance( void ) { if ( !_instance ) _instance = new Tesselator(); return _instance; }
-		static void destroy( void ) { delete _instance; _instance = 0; }
 		
-		void init( unsigned int verticesCount, const TVec3d& normal, GLenum winding_rule = GLU_TESS_WINDING_ODD );
-
-		// Add a new contour - add the exterior ring first, then interiors 
-		void addContour( const std::vector<TVec3d>& );
-
-		// Let's tesselate!
-		void compute( void );
-
-		// Tesselation result access
-		inline const std::vector<TVec3d>& getVertices( void ) const { return _vertices; }
-		inline const std::vector<unsigned int>& getIndices( void ) const { return _indices; }
-
-	private:
-		Tesselator( void );
-		~Tesselator( void );
-
-		typedef void (APIENTRY *GLU_TESS_CALLBACK)();
-		static void CALLBACK beginCallback( GLenum, void* );
-		static void CALLBACK vertexCallback( GLvoid*, void* );
-		static void CALLBACK combineCallback( GLdouble[3], void* [4], GLfloat [4], void** , void* );
-		static void CALLBACK endCallback( void* );
-		static void CALLBACK errorCallback( GLenum, void* );	
-
-	private:
-		static Tesselator* _instance; // singleton
-		GLUtesselator *_tobj;
-		GLenum  _curMode;
-
-		std::vector<TVec3d> _vertices;		
-		std::vector<unsigned int> _indices;
-
-		std::vector<unsigned int> _curIndices;
-	};
-
 	///////////////////////////////////////////////////////////////////////////////
 
 	Polygon::~Polygon( void ) 
@@ -360,7 +313,7 @@ namespace citygml
 		}
 
 		// merge ids
-		_id = _id + "+" + p->_id;
+		_id += "+" + p->_id;
 
 		return true;
 	}
@@ -442,8 +395,7 @@ namespace citygml
 
 	bool Geometry::merge( Geometry* g ) 
 	{
-		if ( !g ) return false;
-		if ( g->_lod != _lod || g->_type != _type ) return false;
+		if ( !g || g->_lod != _lod || g->_type != _type ) return false;
 
 		unsigned int pSize = g->_polygons.size();
 		for ( unsigned int i = 0; i < pSize; i++ )
@@ -451,7 +403,7 @@ namespace citygml
 
 		g->_polygons.clear();
 
-		_id = _id + "+" + g->_id;
+		_id += "+" + g->_id;
 
 		return true;
 	}
@@ -491,31 +443,6 @@ namespace citygml
 		return s;
 	};
 
-	// std::string tokenizer helper
-	std::vector<std::string> tokenize( const std::string& str, const std::string& delimiters )
-	{
-		std::vector<std::string> tokens;
-		std::string::size_type lastPos = str.find_first_not_of( delimiters, 0 );
-		std::string::size_type pos = str.find_first_of( delimiters, lastPos );
-
-		while ( std::string::npos != pos || std::string::npos != lastPos )
-		{
-			tokens.push_back( str.substr( lastPos, pos - lastPos ) );
-			lastPos = str.find_first_not_of( delimiters, pos );
-			pos = str.find_first_of( delimiters, lastPos );
-		}
-		return tokens;
-	}
-
-	inline bool caseInsensitiveStringCompare( const std::string& str1, const std::string& str2 ) 
-	{
-		std::string s1( str1 );
-		std::transform( s1.begin(), s1.end(), s1.begin(), ::tolower );	
-		std::string s2( str2 );
-		std::transform( s2.begin(), s2.end(), s2.begin(), ::tolower );
-		return ( s1 == s2 );
-	}
-
 	CityObjectsTypeMask getCityObjectsTypeMaskFromString( const std::string& stringMask ) 
 	{
 		CityObjectsTypeMask mask = 0;
@@ -524,7 +451,7 @@ namespace citygml
 
 #define COMPARECITYNAMEMASK( _t_ ) {\
 	bool neg = ( tokens[i][0] == '~' || tokens[i][0] == '!' );\
-	if ( caseInsensitiveStringCompare( #_t_, neg ? tokens[i].substr(1) : tokens[i] ) ) { mask = neg ? ( mask & (~ COT_ ## _t_ )) : ( mask | COT_ ## _t_ );}\
+	if ( ci_string_compare( #_t_, neg ? tokens[i].substr(1) : tokens[i] ) ) { mask = neg ? ( mask & (~ COT_ ## _t_ )) : ( mask | COT_ ## _t_ );}\
 	}
 
 		for ( unsigned int i = 0; i < tokens.size(); i++ ) 
@@ -562,12 +489,11 @@ namespace citygml
 
 	void CityObject::finish( AppearanceManager& appearanceManager, bool optimize ) 
 	{
-		bool finish = false;
-
 		Appearance* myappearance = appearanceManager.getAppearance( getId() );
 		std::vector< Geometry* >::const_iterator it = _geometries.begin();
 		for ( ; it != _geometries.end(); it++ ) (*it)->finish( appearanceManager, myappearance ? myappearance : NULL, optimize );
 
+		bool finish = false;
 		while ( !finish && optimize ) 
 		{
 			finish = true;
@@ -621,126 +547,5 @@ namespace citygml
 		_appearanceManager.finish();
 		
 		Tesselator::destroy();
-	}
-
-	//////////////////////////////////////////////////////////////////////////////
-
-	Tesselator* Tesselator::_instance = NULL;
-
-	Tesselator::Tesselator( void )
-	{
-		_tobj = gluNewTess(); 
-
-		gluTessCallback( _tobj, GLU_TESS_VERTEX_DATA, (GLU_TESS_CALLBACK)&vertexCallback );
-		gluTessCallback( _tobj, GLU_TESS_BEGIN_DATA, (GLU_TESS_CALLBACK)&beginCallback );
-		gluTessCallback( _tobj, GLU_TESS_END_DATA, (GLU_TESS_CALLBACK)&endCallback );
-		gluTessCallback( _tobj, GLU_TESS_COMBINE_DATA, (GLU_TESS_CALLBACK)&combineCallback );
-		gluTessCallback( _tobj, GLU_TESS_ERROR_DATA, (GLU_TESS_CALLBACK)&errorCallback );
-	}
-
-	void Tesselator::init( unsigned int verticesCount, const TVec3d& normal, GLenum winding_rule )
-	{
-		gluTessBeginPolygon( _tobj, this ); 
-
-		gluTessProperty( _tobj, GLU_TESS_WINDING_RULE, winding_rule );
-		gluTessNormal( _tobj, normal.x, normal.y, normal.z );
-				
-		_vertices.clear();
-		_vertices.reserve( verticesCount );
-		_indices.clear();
-		_curIndices.clear();
-	}
-
-	Tesselator::~Tesselator( void ) 
-	{
-		gluDeleteTess( _tobj );
-	}
-
-	void Tesselator::compute( void ) 
-	{
-		gluTessEndPolygon( _tobj );  
-	}
-
-	void Tesselator::addContour( const std::vector<TVec3d>& pts )
-	{		
-		unsigned int len = pts.size();
-		if ( len < 3 ) return;
-
-		unsigned int pos = _vertices.size();
-		
-		gluTessBeginContour( _tobj );
-
-		for ( unsigned int i = 0; i < len; i++ ) 
-		{
-			_vertices.push_back( pts[i] );
-
-			gluTessVertex( _tobj, &(_vertices[pos+i][0]), (void*)(pos+i) );
-		}
-
-		gluTessEndContour( _tobj );
-	}
-
-	void CALLBACK Tesselator::beginCallback( GLenum which, void* userData ) 
-	{
-		Tesselator *tess = (Tesselator*)userData;
-		tess->_curMode = which;
-	}
-
-	void CALLBACK Tesselator::vertexCallback( GLvoid *data, void* userData ) 
-	{
-		Tesselator *tess = (Tesselator*)userData;
-		tess->_curIndices.push_back( (int)data );
-	}
-
-	void CALLBACK Tesselator::combineCallback( GLdouble coords[3], void* vertex_data[4], GLfloat weight[4], void** outData, void* userData )
-	{
-		Tesselator *tess = (Tesselator*)userData;
-		unsigned int npoint = tess->_vertices.size();
-		tess->_vertices.push_back( TVec3d( coords[0], coords[1], coords[2] ) );
-		*outData = (void*)npoint;
-	}
-
-	void CALLBACK Tesselator::endCallback( void* userData ) 
-	{
-		Tesselator *tess = (Tesselator*)userData;
-
-		unsigned int len = tess->_curIndices.size();
-
-		switch ( tess->_curMode ) 
-		{
-		case GL_TRIANGLES:
-			{
-				for ( unsigned int i = 0; i < len; i++ ) 
-					tess->_indices.push_back( tess->_curIndices[i] );
-			}
-			break;
-		case GL_TRIANGLE_FAN:
-		case GL_TRIANGLE_STRIP: 
-			{
-				unsigned int first = tess->_curIndices[0];
-				unsigned int prev = tess->_curIndices[1];
-
-				for ( unsigned int i = 2; i < len; i++ ) 
-				{
-					if ( tess->_curMode == GL_TRIANGLE_FAN || i%2 == 0 ) tess->_indices.push_back( first );
-					tess->_indices.push_back( prev );
-					if ( tess->_curMode == GL_TRIANGLE_STRIP )
-					{
-						if ( i%2 == 1) tess->_indices.push_back( first );
-						first = prev;
-					}
-					prev = tess->_curIndices[i];
-					tess->_indices.push_back( prev );
-				}
-			}
-			break;
-		default: std::cerr << "CityGML tesselator: non-supported GLU tesselator primitive " << tess->_curMode << std::endl;
-		}
-		tess->_curIndices.clear();
-	}
-
-	void CALLBACK Tesselator::errorCallback( GLenum errorCode, void* userData )
-	{
-		std::cerr << "CityGML tesselator error: " << gluErrorString( errorCode ) << std::endl;
 	}
 }
