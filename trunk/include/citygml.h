@@ -252,8 +252,7 @@ namespace citygml
 		{
 			texCoords.clear();
 			std::map<std::string, TexCoords*>::const_iterator it = _texCoordsMap.find( nodeid );
-			if ( it == _texCoordsMap.end() ) return false;
-			if ( !it->second ) return false;
+			if ( it == _texCoordsMap.end() || !it->second ) return false;
 			texCoords = *it->second;
 			return true;
 		}
@@ -261,8 +260,6 @@ namespace citygml
 	protected:
 		void addAppearance( Appearance* );
 		void assignNode( const std::string& nodeid );
-		/*void assignNode( const std::string& nodeid, Material* );
-		void assignTexCoords( const std::string& nodeid, TexCoords* );*/
 		bool assignTexCoords( TexCoords* );
 
 		void finish( void ) { _appearanceMap.clear(); _texCoordsMap.clear(); }
@@ -295,7 +292,7 @@ namespace citygml
 
 		inline void addVertex( const TVec3d& v ) { _vertices.push_back( v ); }
 
-		LIBCITYGML_EXPORT TVec3f computeNormal( void ) const;
+		LIBCITYGML_EXPORT TVec3d computeNormal( void ) const;
 
 	protected:
 		inline std::vector<TVec3d>& getVertices( void ) { return _vertices; }
@@ -332,8 +329,10 @@ namespace citygml
 		// Get the normals
 		inline const std::vector<TVec3f>& getNormals( void ) const { return _normals; }
 
+		// Get texture coordinates
 		inline const TexCoords& getTexCoords( void ) const { return _texCoords; }
 
+		// Get the appearance
 		inline const Appearance* getAppearance( void ) const { return _appearance; }
 
 	protected:
@@ -342,11 +341,11 @@ namespace citygml
 
 		void addRing( LinearRing* );
 
-		void tesselate( void );
+		void tesselate( const TVec3d& );
 		void mergeRings( void );
 		void clearRings( void );
 
-		TVec3f computeNormal( void );
+		TVec3d computeNormal( void );
 
 		bool merge( Polygon* );
 
@@ -567,7 +566,7 @@ namespace citygml
 		// Return the envelope (ie. the bounding box) of the model
 		inline const Envelope& getEnvelope( void ) const { return _envelope; }
 
-		// Get the model's number of city objects 
+		// Get the number of city objects 
 		inline unsigned int size( void ) const
 		{ 
 			unsigned int count = 0;

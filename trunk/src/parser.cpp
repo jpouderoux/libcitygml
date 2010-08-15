@@ -401,9 +401,9 @@ std::string CityGMLHandler::getNodeName( const std::string& name )
 	return name;
 }
 
-void CityGMLHandler::startElement( const std::string& wlocalname, void* attributes ) 
+void CityGMLHandler::startElement( const std::string& name, void* attributes ) 
 {
-	std::string localname = getNodeName( wlocalname );
+	std::string localname = getNodeName( name );
 
 	_nodePath.push_back( localname );
 
@@ -570,9 +570,9 @@ void CityGMLHandler::createGeoTransform( std::string srsName )
 	_geoTransform = new GeoTransform( srsName, _params.destSRS );
 }
 
-void CityGMLHandler::endElement( const std::string& wlocalname ) 
+void CityGMLHandler::endElement( const std::string& name ) 
 {
-	std::string localname = getNodeName( wlocalname );
+	std::string localname = getNodeName( name );
 
 	_nodePath.pop_back();
 
