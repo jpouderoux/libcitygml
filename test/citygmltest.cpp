@@ -1,3 +1,19 @@
+/* -*-c++-*- citygml2vrml - Copyright (c) 2010 Joachim Pouderoux, BRGM
+*
+* This file is part of libcitygml library
+* http://code.google.com/p/libcitygml
+*
+* libcitygml is free software: you can redistribute it and/or modify
+* it under the terms of the GNU Lesser General Public License as published by
+* the Free Software Foundation, either version 2.1 of the License, or
+* (at your option) any later version.
+*
+* libcitygml is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU Lesser General Public License for more details.
+*/
+
 #include <iostream>
 #include <fstream>
 #include <time.h> 
@@ -18,7 +34,7 @@ void usage()
 		<< "                   CityFurniture, Track, Road, Railway, Square, PlantCover," << std::endl
 		<< "                   SolitaryVegetationObject, WaterBody, TINRelief, LandUse," << std::endl
 		<< "                   Tunnel, Bridge, BridgeConstructionElement," << std::endl
-		<< "                   BridgeInstallation, BridgePart,  All" << std::endl
+		<< "                   BridgeInstallation, BridgePart, All" << std::endl
 		<< "                  and seperators |,&,~." << std::endl
 		<< "                  Examples:" << std::endl
 		<< "                  \"All&~Track&~Room\" to parse everything but tracks & rooms" << std::endl
@@ -26,6 +42,7 @@ void usage()
 	std::cout << "  -destSRS <srs> Destination SRS (default: no transform)" << std::endl;
 	exit(-1);
 }
+
 int main( int argc, char **argv )
 {
 	if ( argc < 2 ) usage();
@@ -44,6 +61,7 @@ int main( int argc, char **argv )
 		if ( param == "-filter" ) { if ( i == argc - 1 ) usage(); params.objectsMask = argv[i+1]; i++; fargc = i+1; }
 		if ( param == "-destsrs" ) { if ( i == argc - 1 ) usage(); params.destSRS = argv[i+1]; i++; fargc = i+1; }
 	}
+
 	if ( argc - fargc < 1 ) usage();
 
 	std::cout << "Parsing CityGML file " << argv[fargc] << " using libcitygml v." << LIBCITYGML_VERSIONSTR << "..." << std::endl;
@@ -64,9 +82,7 @@ int main( int argc, char **argv )
 
 	if ( !city ) return NULL;
 
-	std::cout << "Done in " << difftime( end, start ) << " seconds." << std::endl; 
-
-	std::cout << city->size() << " city objects read." << std::endl;
+	std::cout << "Done in " << difftime( end, start ) << " seconds." << std::endl << city->size() << " city objects read." << std::endl;
 
 	std::cout << "Analyzing the city objects..." << std::endl;
 
@@ -75,7 +91,7 @@ int main( int argc, char **argv )
 
 	citygml::CityObjectsMap::const_iterator it = cityObjectsMap.begin();
 
-	for ( ; it != cityObjectsMap.end(); it++ )
+	for ( ; it != cityObjectsMap.end(); ++it )
 	{
 		const citygml::CityObjects& v = it->second;
 
@@ -98,9 +114,7 @@ int main( int argc, char **argv )
 		std::cout << std::endl << "Objects hierarchy:" << std::endl;
 		const citygml::CityObjects& roots = city->getCityObjectsRoots();
 
-		for ( unsigned int i = 0; i < roots.size(); i++ )
-
-			analyzeObject( roots[ i ], 2 );
+		for ( unsigned int i = 0; i < roots.size(); i++ ) analyzeObject( roots[ i ], 2 );
 	}
 
 	std::cout << "Done." << std::endl;
