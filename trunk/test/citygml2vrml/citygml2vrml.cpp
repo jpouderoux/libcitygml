@@ -36,15 +36,15 @@ private:
 	void dumpPolygon( const citygml::CityObject*, const citygml::Geometry*, const citygml::Polygon* );
 
 protected:
-	inline void addHeader() { _out << "#VRML V2.0 utf8" << std::endl; }
+	inline void addHeader( void ) { _out << "#VRML V2.0 utf8" << std::endl; }
 
-	inline void printIndent() { for ( int i = 0; i < _indentCount; i++ ) _out << "\t"; }
+	inline void printIndent( void ) { for ( int i = 0; i < _indentCount; i++ ) _out << "\t"; }
 
 	inline void addComment(const std::string& cmt) {  printIndent(); _out << "# " << cmt << std::endl; }
 
 	inline void beginNode( const std::string &node ) { printIndent(); _out << node << " {" << std::endl; _indentCount++; }
 
-	inline void endNode() { _indentCount--; printIndent(); _out << "}" << std::endl; }
+	inline void endNode( void ) { _indentCount--; printIndent(); _out << "}" << std::endl; }
 
 	inline void addAttribute( const std::string &attr ) { printIndent(); _out << attr << " "; }
 
@@ -56,11 +56,11 @@ protected:
 
 	inline void beginAttributeArray( const std::string &attr ) { addAttribute( attr ); _out << " [" << std::endl; _indentCount++; }
 
-	inline void endAttributeArray() { _indentCount--; printIndent(); _out << "]" << std::endl; }
+	inline void endAttributeArray( void ) { _indentCount--; printIndent(); _out << "]" << std::endl; }
 
-	inline void beginGroup() { beginNode("Group"); beginAttributeArray( "children" ); }
+	inline void beginGroup( void ) { beginNode("Group"); beginAttributeArray( "children" ); }
 
-	inline void endGroup() { endAttributeArray(); endNode(); }
+	inline void endGroup( void ) { endAttributeArray(); endNode(); }
 
 private:
 	citygml::CityModel* _cityModel;
@@ -90,7 +90,7 @@ void usage()
 		<< "                   CityFurniture, Track, Road, Railway, Square, PlantCover," << std::endl
 		<< "                   SolitaryVegetationObject, WaterBody, TINRelief, LandUse," << std::endl
 		<< "                   Tunnel, Bridge, BridgeConstructionElement," << std::endl
-		<< "                   BridgeInstallation, BridgePart,  All" << std::endl
+		<< "                   BridgeInstallation, BridgePart, All" << std::endl
 		<< "                  and seperators |,&,~." << std::endl
 		<< "                  Examples:" << std::endl
 		<< "                  \"All&~Track&~Room\" to parse everything but tracks & rooms" << std::endl
@@ -98,7 +98,7 @@ void usage()
 	std::cout << "  -minLOD <level> Minimum LOD level to parse (default:0)" << std::endl;
 	std::cout << "  -maxLOD <level> Maximum LOD level to parse (default:4)" << std::endl;
 	std::cout << "  -destSRS <srs> Destination SRS (default: no transform)" << std::endl;
-	exit( -1 );
+	exit( EXIT_FAILURE );
 }
 
 int main( int argc, char **argv )
@@ -134,7 +134,7 @@ int main( int argc, char **argv )
 	time_t end;
 	time( &end );
 
-	if ( !city ) return NULL;
+	if ( !city ) return EXIT_FAILURE;
 
 	std::cout << "Done in " << difftime( end, start ) << " seconds." << std::endl << city->size() << " city objects read." << std::endl;
 
@@ -144,10 +144,10 @@ int main( int argc, char **argv )
 	std::string outfile;
 	if ( argc - fargc == 1 ) 
 	{
-		outfile = argv[fargc];
-		outfile = outfile.substr(0, outfile.find_last_of(".")) + ".wrl";
+		outfile = argv[ fargc ];
+		outfile = outfile.substr( 0, outfile.find_last_of( "." ) ) + ".wrl";
 	}
-	else outfile = argv[fargc+1];
+	else outfile = argv[ fargc + 1 ];
 	
 	std::cout << "Converting the city model to VRML97 file " << outfile << "..." << std::endl;
 
@@ -158,9 +158,8 @@ int main( int argc, char **argv )
 	else 
 		std::cout << "Failed!" << std::endl;
 
-	return 0;
+	return EXIT_SUCCESS;
 }
-
 
 // VRML97 city converter
 
@@ -190,18 +189,15 @@ bool VRML97Printer::save( const std::string& outFilename )
 		std::cout << " Creation of " << v.size() << " " << citygml::getCityObjectsClassName( it->first ) << ( ( v.size() > 1 ) ? "s" : "" ) << "..." << std::endl;
 
 		addComment( "Object type: " + citygml::getCityObjectsClassName( it->first ) + ( ( v.size() > 1 ) ? "s" : "" ) );
+		
 		beginGroup();
-
 		for ( unsigned int i = 0; i < v.size(); i++ ) dumpCityObject( v[i] );
-
 		endGroup();
 	}
 #else
 	const citygml::CityObjects& roots = _cityModel->getCityObjectsRoots();
 
-	for ( unsigned int i = 0; i < roots.size(); i++ )
-
-		dumpCityObject( roots[i] );
+	for ( unsigned int i = 0; i < roots.size(); i++ ) dumpCityObject( roots[i] );
 #endif
 
 	_out.close();
@@ -220,11 +216,7 @@ void VRML97Printer::dumpCityObject( const citygml::CityObject* object )
 	for ( unsigned int i = 0; i < object->size(); i++ ) dumpGeometry( object, object->getGeometry( i ) );
 
 #ifdef RECURSIVE_DUMP
-
-	for ( unsigned int i = 0; i < object->getChildCount(); i++ )
-
-		dumpCityObject( object->getChild(i) );
-
+	for ( unsigned int i = 0; i < object->getChildCount(); i++ ) dumpCityObject( object->getChild( i ) );
 #endif
 
 	endGroup();
@@ -256,7 +248,6 @@ void VRML97Printer::dumpPolygon( const citygml::CityObject* object, const citygm
 	beginNode( "Shape" );
 
 	// Geometry management
-
 	beginAttributeNode( "geometry", "IndexedFaceSet" );
 
 	{
@@ -290,15 +281,13 @@ void VRML97Printer::dumpPolygon( const citygml::CityObject* object, const citygm
 	}
 
 	// Normal management
-
 	if ( p->getNormals().size() > 0 )
 	{
 		const std::vector<TVec3f>& normals = p->getNormals();
 		beginAttributeNode( "normal", "Normal" );
 		beginAttributeArray( "vector" );
 		printIndent();
-		for ( unsigned int k = 0 ; k < normals.size(); k++ )
-			_out << normals[k] << ", ";
+		for ( unsigned int k = 0 ; k < normals.size(); k++ ) _out << normals[k] << ", ";
 		_out << std::endl;
 		endAttributeArray();
 		endNode();
@@ -308,7 +297,6 @@ void VRML97Printer::dumpPolygon( const citygml::CityObject* object, const citygm
 	addAttributeValue( "solid", "FALSE" ); //draw both sides of faces
 
 	// Texture coordinates
-
 	if ( dynamic_cast<const citygml::Texture*>( p->getAppearance() ) && p->getTexCoords().size() > 0 )
 	{
 		const citygml::TexCoords& texCoords = p->getTexCoords();
@@ -361,8 +349,7 @@ void VRML97Printer::dumpPolygon( const citygml::CityObject* object, const citygm
 			beginAttributeNode( "material", "Material" );
 
 			TVec4f color( object->getDefaultColor().rgba );
-			if ( g->getType() == citygml::GT_Roof )
-				color = TVec4f( 0.9f, 0.1f, 0.1f, 1.f );
+			if ( g->getType() == citygml::GT_Roof ) color = TVec4f( 0.9f, 0.1f, 0.1f, 1.f );
 			TVec3f crgb( color.r, color.g, color.b );
 			addAttributeValue( "diffuseColor", crgb );
 			if ( color.a != 1.f  ) addAttributeValue( "transparency", 1.f - color.a );
