@@ -518,6 +518,19 @@ void CityGMLHandler::startElement( const std::string& name, void* attributes )
 		}
 		break;
 
+	//case NODETYPE( textureCoordinates ):
+	//	MODEL_FILTER();
+	//	if ( Texture* texture = dynamic_cast<Texture*>( _currentAppearance ) ) 
+	//	{			
+	//		std::string ring = getAttribute( attributes, "ring", "" );
+	//		if ( ring != "" )
+	//		{
+	//			if ( ring.length() > 0 && ring[0] == '#' ) ring = ring.substr( 1 );
+	//			_model->_appearanceManager.assignNode( ring );
+	//		}
+	//	}
+	//	break;
+
 	case NODETYPE( SimpleTexture ):
 	case NODETYPE( ParameterizedTexture ):
 	case NODETYPE( GeoreferencedTexture ):
@@ -753,7 +766,7 @@ void CityGMLHandler::endElement( const std::string& name )
 		{
 			TexCoords *vec = new TexCoords();
 			parseVecList( buffer, *vec );
-			_model->_appearanceManager.assignTexCoords( vec );		
+			_model->_appearanceManager.assignTexCoords( vec );	
 		}
 		break;
 

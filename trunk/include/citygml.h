@@ -143,7 +143,7 @@ namespace citygml
 		friend class CityGMLHandler;
 		friend std::ostream& operator<<( std::ostream&, const Object & );
 	public:
-		Object( const std::string& id ) : _id( id ) { if ( _id != "" ) { std::stringstream ss; ss << "PtrId_" << this; _id = ss.str(); } }
+		Object( const std::string& id ) : _id( id ) { if ( _id == "" ) { std::stringstream ss; ss << "PtrId_" << this; _id = ss.str(); } }
 
 		virtual ~Object( void ) {}
 

@@ -320,7 +320,7 @@ namespace citygml
 	{
 		if ( !appearanceManager.getTexCoords( getId(), _texCoords ) )
 			appearanceManager.getTexCoords( _geometry->getId(), _texCoords );
-		
+
 		_texCoords.resize( _vertices.size() );
 		
 		_appearance = appearanceManager.getAppearance( getId() );
