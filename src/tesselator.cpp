@@ -103,10 +103,7 @@ void CALLBACK Tesselator::endCallback( void* userData )
 	switch ( tess->_curMode ) 
 	{
 	case GL_TRIANGLES:
-		{
-			for ( unsigned int i = 0; i < len; i++ ) 
-				tess->_indices.push_back( tess->_curIndices[i] );
-		}
+		for ( unsigned int i = 0; i < len; i++ ) tess->_indices.push_back( tess->_curIndices[i] );
 		break;
 	case GL_TRIANGLE_FAN:
 	case GL_TRIANGLE_STRIP: 

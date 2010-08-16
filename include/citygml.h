@@ -22,6 +22,7 @@
 #include <vector>
 #include <sstream>
 #include <map>
+#include "vecs.h"
 
 #define LIBCITYGML_VERSION_MAJOR 0
 #define LIBCITYGML_VERSION_MINOR 1
@@ -38,16 +39,6 @@
 #else
 #	define LIBCITYGML_EXPORT
 #endif
-
-#ifdef USE_ELKANO_TYPES
-typedef elk::Vec3d TVec3d;
-typedef elk::Vec3f TVec3f;
-typedef elk::Vec2f TVec2f;
-typedef elk::Vec4f TVec4f;
-#else
-#	include "vecs.h"
-#endif
-
 
 namespace citygml 
 {
