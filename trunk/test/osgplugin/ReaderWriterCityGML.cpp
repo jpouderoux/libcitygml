@@ -185,7 +185,7 @@ bool ReaderWriterCityGML::createCityObject( const citygml::CityObject* object, S
 
 	// Get the default color for the whole city object
 	osg::ref_ptr<osg::Vec4Array> shared_colors = new osg::Vec4Array;
-	shared_colors->push_back( osg::Vec4( object->getDefaultColor().r, object->getDefaultColor().g, object->getDefaultColor().b, 1.f ) );
+	shared_colors->push_back( osg::Vec4( object->getDefaultColor().r, object->getDefaultColor().g, object->getDefaultColor().b, object->getDefaultColor().a ) );
 
 	osg::ref_ptr<osg::Vec4Array> roof_color = new osg::Vec4Array;
 	roof_color->push_back( osg::Vec4( 0.9f, 0.1f, 0.1f, 1.0f ) );
@@ -335,6 +335,14 @@ bool ReaderWriterCityGML::createCityObject( const citygml::CityObject* object, S
 			// That's it!
 			geode->addDrawable( geom );			
 		}
+	}
+
+	// Manage transparency for windows
+	if ( object->getType() == citygml::COT_Window )
+	{
+		osg::StateSet* state = geode->getOrCreateStateSet();    
+		state->setAttributeAndModes( new osg::BlendEquation( osg::BlendEquation::FUNC_ADD ), osg::StateAttribute::OVERRIDE|osg::StateAttribute::ON );
+   		state->setRenderingHint( osg::StateSet::TRANSPARENT_BIN );
 	}
 
 	if ( settings._printNames ) 
