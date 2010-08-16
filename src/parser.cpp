@@ -40,6 +40,10 @@ namespace citygml
 		NODETYPE( creationDate ),	
 		NODETYPE( terminationDate ),
 
+		// gen
+		NODETYPE( stringAttribute ),
+		NODETYPE( value ),
+
 		// gml
 		NODETYPE( description ),
 		NODETYPE( name ),
@@ -184,6 +188,10 @@ void CityGMLHandler::initNodes( void )
 	INSERTNODETYPE( cityObjectMember );
 	INSERTNODETYPE( creationDate );
 	INSERTNODETYPE( terminationDate );
+
+	// gen
+	INSERTNODETYPE( stringAttribute );
+	INSERTNODETYPE( value );
 
 	// gml
 	INSERTNODETYPE( name );
@@ -525,6 +533,10 @@ void CityGMLHandler::startElement( const std::string& name, void* attributes )
 		_appearanceAssigned = false;
 		break;
 
+	case NODETYPE( stringAttribute ):
+		_attributeName = getAttribute( attributes, "name", "" );
+		break;
+
 	default:
 		break;
 	};
@@ -641,6 +653,14 @@ void CityGMLHandler::endElement( const std::string& name )
 	case NODETYPE( creationDate ):
 	case NODETYPE( terminationDate ):
 		if ( _currentCityObject ) _currentCityObject->setProp( localname, buffer.str() );
+		break;
+
+	case NODETYPE( value ):
+		if ( _attributeName != "" && _currentCityObject )
+		{
+			if ( _currentCityObject ) _currentCityObject->setProp( _attributeName, buffer.str() );
+			else if ( _model ) _model->setProp( _attributeName, buffer.str() );
+		}
 		break;
 
 		// Geometry management 

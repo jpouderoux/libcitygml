@@ -121,7 +121,7 @@ namespace citygml
 		std::stringstream _buff;
 
 		ParserParams _params;
-
+		
 		CityModel* _model;
 
 		CityObject* _currentCityObject;
@@ -136,6 +136,8 @@ namespace citygml
 		Appearance* _currentAppearance;
 
 		CityObjectsTypeMask _objectsMask;
+
+		std::string _attributeName;
 
 		int _currentLOD;
 
