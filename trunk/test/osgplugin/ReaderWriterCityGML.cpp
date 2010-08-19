@@ -12,6 +12,7 @@
 #include <osg/Geode>
 #include <osg/Geometry>
 #include <osg/StateSet>
+#include <osg/BlendEquation>
 #include <osg/Material>
 #include <osg/Texture2D>
 #include <osg/TexGen>
@@ -209,7 +210,7 @@ bool ReaderWriterCityGML::createCityObject( const citygml::CityObject* object, S
 			vertices->reserve( vert.size() );
 			for ( unsigned int k = 0; k < vert.size(); k++ )
 			{
-				osg::Vec3d pt( vert[k][0], vert[k][1], vert[k][2] );
+				osg::Vec3d pt( vert[k].x, vert[k].y, vert[k].z );
 				vertices->push_back( pt );
 			}
 
