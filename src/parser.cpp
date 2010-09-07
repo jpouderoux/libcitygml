@@ -816,22 +816,43 @@ void CityGMLHandler::endElement( const std::string& name )
 void CityGMLHandler::createGeoTransform( std::string srsName )
 {	
 	if ( srsName == "" ) return; 
-	// Manage URN composition and retain only the first SRS
-	// ie. transform: urn:ogc:def:crs,crs:EPSG:6.12:3068,crs:EPSG:6.12:5783
-	// to urn:ogc:def:crs:EPSG:6.12:3068
-	std::vector<std::string> tokens = tokenize( srsName, "," );
-	if ( tokens.size() > 1 )
-	{
-		std::string::size_type p = tokens[1].find( ':' );
-		srsName = ( p != std::string::npos ) ? tokens[0] + tokens[1].substr( p ) : srsName = tokens[0] + tokens[1];		
-	}
 
+	// Support SRS pattern like: 
+	//	urn:EPSG:geographicCRS:4326
+	// 	urn:ogc:def:crs:EPSG:6.6:4326
+	//	http://www.opengis.net/gml/srs/epsg.xml#4326
+	//	http://www.epsg.org/6.11.2/4326
+	//	EPSG:4326
+
+	bool latlon = false;
+
+	std::string proj4Name = srsName;
+
+	if ( srsName.find( "urn:" ) == 0 )
+	{
+		// Manage URN composition but retain only the first SRS
+		// ie. transform: urn:ogc:def:crs,crs:EPSG:6.12:3068,crs:EPSG:6.12:5783
+		// to urn:ogc:def:crs:EPSG:6.12:3068
+		std::vector<std::string> tokens = tokenize( srsName, "," );
+		if ( tokens.size() > 1 )
+		{
+			std::string::size_type p = tokens[1].find( ':' );
+			proj4Name = ( p != std::string::npos ) ? tokens[0] + tokens[1].substr( p ) : srsName = tokens[0] + tokens[1];		
+		}
+		latlon = true;
+	}
+	else if ( srsName.find( "http://www.opengis.net/gml/srs/epsg.xml#" ) != std::string::npos )	
+		proj4Name = "EPSG:" + srsName.substr( srsName.find_last_of( '#' ) + 1 );
+
+	else if ( srsName.find( "http://www.epsg.org/" ) != std::string::npos )
+		proj4Name = "EPSG:" + srsName.substr( srsName.find_last_of( '/' ) + 1 );
+	
 	if ( _model->_srsName == "" ) _model->_srsName = srsName;
 
-	if ( srsName != _model->_srsName ) { std::cerr << "Warning: More than one SRS is defined. The SRS " << srsName << " is declared while the scene SRS has been set to " << _model->_srsName << std::endl; return; }
+	if ( srsName != _model->_srsName ) { std::cerr << "Warning: More than one SRS is defined. The SRS " << srsName << " is declared while the scene SRS has been set to " << _model->_srsName << std::endl; /*return;*/ }
 
 	if ( _params.destSRS == "" ) return;
 	
 	delete (GeoTransform*)_geoTransform;
-	_geoTransform = new GeoTransform( srsName, _params.destSRS );
+	_geoTransform = new GeoTransform( proj4Name, _params.destSRS );
 }

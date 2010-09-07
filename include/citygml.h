@@ -22,6 +22,8 @@
 #include <vector>
 #include <sstream>
 #include <map>
+#include <stdio.h>
+#include <stdlib.h>
 #include "vecs.h"
 
 #define LIBCITYGML_VERSION_MAJOR 0
