@@ -20,6 +20,7 @@
 #include "tesselator.h"
 #include "citygml.h"
 #include "utils.h"
+#include <string.h>
 
 #include <iterator>
 
