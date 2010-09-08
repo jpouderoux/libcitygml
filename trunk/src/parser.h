@@ -160,4 +160,4 @@ namespace citygml
 	};
 }
 
-#endif __PARSER_H__
+#endif
