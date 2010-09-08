@@ -46,7 +46,7 @@ namespace citygml
 {
 	class CityModel;
 
-	typedef enum {
+	enum CityObjectsType {
 		COT_GenericCityObject           = 1 << 0,
 		COT_Building                    = 1 << 1,
 		COT_Room                        = 1 << 2,
@@ -70,7 +70,7 @@ namespace citygml
 		COT_BridgeInstallation			= 1 << 20, 
 		COT_BridgePart                  = 1 << 21,
 		COT_All                         = 0xFFFFFF
-	} CityObjectsType;
+	};
 
 	typedef unsigned int CityObjectsTypeMask;
 
@@ -361,7 +361,7 @@ namespace citygml
 
 	///////////////////////////////////////////////////////////////////////////////
 
-	typedef enum GeometryType 
+	enum GeometryType 
 	{
 		GT_Unknown = 0,
 		GT_Roof,
