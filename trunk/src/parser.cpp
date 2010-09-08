@@ -30,7 +30,7 @@ using namespace citygml;
 namespace citygml
 {
 	// CityGML node types
-	typedef enum CityGMLNodeType
+	enum CityGMLNodeType
 	{
 		NODETYPE( Unknown ) = 0,
 

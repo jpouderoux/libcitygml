@@ -32,7 +32,7 @@
 
 namespace citygml
 {	
-	typedef enum CityGMLNodeType;
+	enum CityGMLNodeType;
 	
 	// CityGML SAX parsing handler
 	class CityGMLHandler
