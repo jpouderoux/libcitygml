@@ -32,7 +32,137 @@
 
 namespace citygml
 {	
-	enum CityGMLNodeType;
+	#define NODETYPE(_t_) CG_ ## _t_
+
+	// CityGML node types
+	enum CityGMLNodeType
+	{
+		NODETYPE( Unknown ) = 0,
+
+		// core
+		NODETYPE( CityModel ),
+		NODETYPE( cityObjectMember ),
+		NODETYPE( creationDate ),	
+		NODETYPE( terminationDate ),
+
+		// gen
+		NODETYPE( stringAttribute ),
+		NODETYPE( value ),
+
+		// gml
+		NODETYPE( description ),
+		NODETYPE( name ),
+		NODETYPE( coordinates ),
+		NODETYPE( pos ),
+		NODETYPE( boundedBy ),
+		NODETYPE( Envelope ),
+		NODETYPE( lowerCorner ),
+		NODETYPE( upperCorner ),
+		NODETYPE( Solid ),
+		NODETYPE( surfaceMember ),
+		NODETYPE( CompositeSurface ),
+		NODETYPE( TriangulatedSurface ),
+		NODETYPE( TexturedSurface ),
+		NODETYPE( Triangle ),
+		NODETYPE( Polygon ),
+		NODETYPE( posList ),
+		NODETYPE( OrientableSurface ),
+		NODETYPE( LinearRing ),
+
+		NODETYPE( lod1Solid ),
+		NODETYPE( lod2Solid ),
+		NODETYPE( lod3Solid ),
+		NODETYPE( lod4Solid ),
+		NODETYPE( lod1Geometry ),
+		NODETYPE( lod2Geometry ),
+		NODETYPE( lod3Geometry ),
+		NODETYPE( lod4Geometry ),
+
+		// bldg
+		NODETYPE( Building ),
+		NODETYPE( Room ),
+		NODETYPE( Door ),
+		NODETYPE( Window ),
+		NODETYPE( BuildingInstallation ),
+		NODETYPE( address ),
+		NODETYPE( measuredHeight ),
+		NODETYPE( class ),
+		NODETYPE( type ),
+		NODETYPE( function ),
+		NODETYPE( usage ),
+
+		// BoundarySurfaceType
+		NODETYPE( WallSurface ),
+		NODETYPE( RoofSurface ),
+		NODETYPE( GroundSurface ),
+		NODETYPE( ClosureSurface ),
+		NODETYPE( FloorSurface ),
+		NODETYPE( InteriorWallSurface ),
+		NODETYPE( CeilingSurface ),
+		NODETYPE( BuildingFurniture ),
+
+		NODETYPE( CityFurniture ),
+
+		NODETYPE( interior ),
+		NODETYPE( exterior ),
+
+		// wtr
+		NODETYPE( WaterBody ),
+
+		// veg
+		NODETYPE( PlantCover ),
+		NODETYPE( SolitaryVegetationObject ),
+
+		// trans
+		NODETYPE( TrafficArea ),
+		NODETYPE( AuxiliaryTrafficArea ),
+		NODETYPE( Track ),
+		NODETYPE( Road ),
+		NODETYPE( Railway ),
+		NODETYPE( Square ),
+
+		// luse
+		NODETYPE( LandUse ),
+
+		// dem
+		NODETYPE( lod ),
+		NODETYPE( TINRelief ),
+
+		// sub
+		NODETYPE( Tunnel ),
+		NODETYPE( relativeToTerrain ),
+
+		// brid
+		NODETYPE( Bridge ),
+		NODETYPE( BridgeConstructionElement ),
+		NODETYPE( BridgeInstallation ),
+		NODETYPE( BridgePart ),
+
+		// gen
+		NODETYPE( GenericCityObject ),
+		
+		// app
+		NODETYPE( SimpleTexture ),	
+		NODETYPE( ParameterizedTexture ),
+		NODETYPE( GeoreferencedTexture ),
+		NODETYPE( imageURI ),
+		NODETYPE( textureMap ),
+		NODETYPE( target ),
+		NODETYPE( textureCoordinates ),
+		NODETYPE( textureType ),
+		NODETYPE( repeat ),
+
+		NODETYPE( X3DMaterial ),
+		NODETYPE( Material ),
+		NODETYPE( appearanceMember ),
+		NODETYPE( surfaceDataMember ),
+		NODETYPE( shininess ),
+		NODETYPE( transparency ),
+		NODETYPE( specularColor ),
+		NODETYPE( diffuseColor ),
+		NODETYPE( emissiveColor ),
+		NODETYPE( ambientIntensity )
+	};
 	
 	// CityGML SAX parsing handler
 	class CityGMLHandler
