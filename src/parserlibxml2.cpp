@@ -101,9 +101,15 @@ void fatalError( void *user_data, const char *msg, ... )
 
 	va_list args = 0;
 	va_start( args, msg );
+#ifdef MSVC
 	size_t len = _vscprintf( msg, args ) + 1;
 	std::vector<char> buffer( len, '\0' );
 	if ( _vsnprintf_s( &buffer[0], buffer.size(), len, msg, args ) ) error = &buffer[0];
+#else
+	size_t len = 1024;
+	std::vector<char> buffer( len, '\0' );
+	if ( vsnprintf( &buffer[0], buffer.size(), msg, args ) ) error = &buffer[0];
+#endif
 	va_end( args );
 
 	static_cast<CityGMLHandlerLibXml2*>(context->_private)->fatalError( error );
