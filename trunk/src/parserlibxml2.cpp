@@ -101,7 +101,7 @@ void fatalError( void *user_data, const char *msg, ... )
 	_xmlParserCtxt* context = static_cast<_xmlParserCtxt*>(user_data);
 	std::string error = "Parsing error!";
 
-	va_list args = 0;
+	va_list args;
 	va_start( args, msg );
 #ifdef MSVC
 	size_t len = _vscprintf( msg, args ) + 1;
