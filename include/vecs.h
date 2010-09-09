@@ -4,6 +4,7 @@
 #include <sstream>
 #include <iostream>
 #include <math.h>
+#include <string.h>
 
 // 2D vector class.
 
