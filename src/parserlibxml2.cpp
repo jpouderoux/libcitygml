@@ -20,6 +20,8 @@
 
 #include "parser.h"
 
+#include <stdarg.h>
+#include <stdio.h>
 #include <libxml/parser.h>
 #include <libxml/SAX.h>
 #include <libxml/parserInternals.h>
