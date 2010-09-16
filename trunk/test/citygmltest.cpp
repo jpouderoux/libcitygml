@@ -72,7 +72,7 @@ int main( int argc, char **argv )
 #if 0
 	std::ifstream file;
 	file.open( argv[fargc], std::ifstream::in );
-	citygml::CityModel *city = citygml::load( file, filter );
+	citygml::CityModel *city = citygml::load( file, params );
 #else
 	citygml::CityModel *city = citygml::load( argv[fargc], params );
 #endif

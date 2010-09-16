@@ -24,7 +24,6 @@
 #include <stdio.h>
 #include <libxml/parser.h>
 #include <libxml/SAX.h>
-#include <libxml/parserInternals.h>
 
 using namespace citygml;
 
@@ -68,37 +67,31 @@ protected:
 
 void startDocument( void *user_data ) 
 {
-	_xmlParserCtxt* context = static_cast<_xmlParserCtxt*>(user_data);
-	static_cast<CityGMLHandlerLibXml2*>(context->_private)->startDocument();
+	static_cast<CityGMLHandlerLibXml2*>(user_data)->startDocument();
 }
 
 void endDocument( void *user_data ) 
 {
-	_xmlParserCtxt* context = static_cast<_xmlParserCtxt*>(user_data);
-	static_cast<CityGMLHandlerLibXml2*>(context->_private)->endDocument();
+	static_cast<CityGMLHandlerLibXml2*>(user_data)->endDocument();
 }
 
 void startElement( void *user_data, const xmlChar *name, const xmlChar **attrs ) 
 {
-	_xmlParserCtxt* context = static_cast<_xmlParserCtxt*>(user_data);
-	static_cast<CityGMLHandlerLibXml2*>(context->_private)->startElement( name, attrs );
+	static_cast<CityGMLHandlerLibXml2*>(user_data)->startElement( name, attrs );
 }
 
 void endElement( void *user_data, const xmlChar *name )
 {
-	_xmlParserCtxt* context = static_cast<_xmlParserCtxt*>(user_data);
-	static_cast<CityGMLHandlerLibXml2*>(context->_private)->endElement( name );
+	static_cast<CityGMLHandlerLibXml2*>(user_data)->endElement( name );
 }
 
 void characters( void *user_data, const xmlChar *ch, int len )
 {
-	_xmlParserCtxt* context = static_cast<_xmlParserCtxt*>(user_data);
-	static_cast<CityGMLHandlerLibXml2*>(context->_private)->characters( ch, len );
+	static_cast<CityGMLHandlerLibXml2*>(user_data)->characters( ch, len );
 }
 
 void fatalError( void *user_data, const char *msg, ... ) 
 {
-	_xmlParserCtxt* context = static_cast<_xmlParserCtxt*>(user_data);
 	std::string error = "Parsing error!";
 
 	va_list args;
@@ -114,7 +107,7 @@ void fatalError( void *user_data, const char *msg, ... )
 #endif
 	va_end( args );
 
-	static_cast<CityGMLHandlerLibXml2*>(context->_private)->fatalError( error );
+	static_cast<CityGMLHandlerLibXml2*>(user_data)->fatalError( error );
 	throw new std::string( error );
 }
 
@@ -134,16 +127,14 @@ namespace citygml
 		sh.error = fatalError;
 		sh.fatalError = fatalError;
 
-		xmlParserCtxtPtr context = xmlCreatePushParserCtxt( &sh, 0, 0, 0, "" );
-		if ( context == 0 ) 
+		xmlParserCtxtPtr context = xmlCreatePushParserCtxt( &sh, handler, 0, 0, "" );
+		if ( !context ) 
 		{
 			std::cerr << "CityGML: Unable to create LibXml2 context!" << std::endl;
 			delete handler;
 			return 0;
 		}	
 
-		context->_private = handler;
-		context->sax = &sh;
 		context->validate = 0;
 
 		try 
@@ -184,16 +175,16 @@ namespace citygml
 		sh.error = fatalError;
 		sh.fatalError = fatalError;
 
-		xmlParserCtxtPtr context = xmlCreateFileParserCtxt( fname.c_str() );
-		if ( context == 0 ) 
+
+		xmlParserInputBufferPtr inputBuffer = xmlParserInputBufferCreateFilename( fname.c_str(), XML_CHAR_ENCODING_NONE );
+		xmlParserCtxtPtr context = xmlCreateIOParserCtxt( &sh, handler, inputBuffer->readcallback, inputBuffer->closecallback, inputBuffer->context, XML_CHAR_ENCODING_NONE );
+		if ( !context ) 
 		{
 			std::cerr << "CityGML: Unable to create LibXml2 context!" << std::endl;
 			delete handler;
 			return 0;
-		}	
+		}
 
-		context->_private = handler;
-		context->sax = &sh;
 		context->validate = 0;
 
 		try 
