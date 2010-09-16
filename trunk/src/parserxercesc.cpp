@@ -56,8 +56,15 @@ public:
 
 	static inline std::string wstos( const XMLCh* const wstr ) 
 	{
+#ifdef MSVC
 		std::wstring w( (const wchar_t*)wstr );
 		return std::string( w.begin(), w.end() );
+#else
+		char* tmp = xercesc::XMLString::transcode(wstr);
+		std::string str(tmp);
+		xercesc::XMLString::release(&tmp);
+		return str;
+#endif
 	}
 
 protected:
@@ -124,7 +131,7 @@ namespace citygml
 		CityGMLHandlerXerces* handler = new CityGMLHandlerXerces( params );
 
 		xercesc::SAXParser* parser = new xercesc::SAXParser();
-		parser->setDoNamespaces( false );    	
+		parser->setDoNamespaces( false );
 		parser->setDocumentHandler( handler );
 		parser->setErrorHandler( handler );
 
@@ -132,7 +139,7 @@ namespace citygml
 
 		try 
 		{
-			StdBinInputSource input( stream );			
+			StdBinInputSource input( stream );
 			parser->parse( input );
 			model = handler->getModel();
 		}
