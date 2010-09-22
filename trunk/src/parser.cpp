@@ -54,8 +54,17 @@ void CityGMLHandler::initNodes( void )
 	INSERTNODETYPE( creationDate );
 	INSERTNODETYPE( terminationDate );
 
+	// grp
+	INSERTNODETYPE( CityObjectGroup );
+	INSERTNODETYPE( groupMember );
+
 	// gen
+	INSERTNODETYPE( GenericCityObject );
 	INSERTNODETYPE( stringAttribute );
+	INSERTNODETYPE( doubleAttribute );
+	INSERTNODETYPE( intAttribute );
+	INSERTNODETYPE( dateAttribute );
+	INSERTNODETYPE( uriAttribute );
 	INSERTNODETYPE( value );
 
 	// gml
@@ -146,9 +155,6 @@ void CityGMLHandler::initNodes( void )
 	INSERTNODETYPE( BridgeConstructionElement );
 	INSERTNODETYPE( BridgeInstallation );
 	INSERTNODETYPE( BridgePart );
-
-	// gen
-	INSERTNODETYPE( GenericCityObject );
 
 	// app
 	INSERTNODETYPE( SimpleTexture );
@@ -412,6 +418,10 @@ void CityGMLHandler::startElement( const std::string& name, void* attributes )
 		break;
 
 	case NODETYPE( stringAttribute ):
+	case NODETYPE( doubleAttribute ):
+	case NODETYPE( intAttribute ):
+	case NODETYPE( dateAttribute ):
+	case NODETYPE( uriAttribute ):
 		_attributeName = getAttribute( attributes, "name", "" );
 		break;
 
@@ -521,13 +531,17 @@ void CityGMLHandler::endElement( const std::string& name )
 		parseValue( buffer, _currentLOD );
 		break;
 
+	case NODETYPE( name ):
+	case NODETYPE( description ):
+		if ( _currentCityObject ) _currentCityObject->setProp( localname, buffer.str() );
+		else if ( _model && getPathDepth() == 1 ) _model->setProp( localname, buffer.str() );
+		break;
+
 	case NODETYPE( class ):
 	case NODETYPE( type ):
 	case NODETYPE( function ):
 	case NODETYPE( usage ):
 	case NODETYPE( measuredHeight ):
-	case NODETYPE( name ):
-	case NODETYPE( description ):
 	case NODETYPE( creationDate ):
 	case NODETYPE( terminationDate ):
 		if ( _currentCityObject ) _currentCityObject->setProp( localname, buffer.str() );
@@ -537,7 +551,7 @@ void CityGMLHandler::endElement( const std::string& name )
 		if ( _attributeName != "" && _currentCityObject )
 		{
 			if ( _currentCityObject ) _currentCityObject->setProp( _attributeName, buffer.str() );
-			else if ( _model ) _model->setProp( _attributeName, buffer.str() );
+			else if ( _model && getPathDepth() == 1 ) _model->setProp( _attributeName, buffer.str() );
 		}
 		break;
 

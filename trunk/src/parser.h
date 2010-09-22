@@ -45,8 +45,17 @@ namespace citygml
 		NODETYPE( creationDate ),	
 		NODETYPE( terminationDate ),
 
+		// grp
+		NODETYPE( CityObjectGroup ),
+		NODETYPE( groupMember ),
+
 		// gen
+		NODETYPE( GenericCityObject ),
 		NODETYPE( stringAttribute ),
+		NODETYPE( doubleAttribute ),
+		NODETYPE( intAttribute ),
+		NODETYPE( dateAttribute ),
+		NODETYPE( uriAttribute ),
 		NODETYPE( value ),
 
 		// gml
@@ -137,9 +146,6 @@ namespace citygml
 		NODETYPE( BridgeConstructionElement ),
 		NODETYPE( BridgeInstallation ),
 		NODETYPE( BridgePart ),
-
-		// gen
-		NODETYPE( GenericCityObject ),
 		
 		// app
 		NODETYPE( SimpleTexture ),	
