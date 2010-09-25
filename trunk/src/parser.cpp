@@ -226,22 +226,30 @@ template<class T> inline void parseValue( std::stringstream &s, T &v, GeoTransfo
 
 template<class T> inline void parseVecList( std::stringstream &s, std::vector<T> &vec ) 
 {
-	while ( !s.eof() )
-	{
-		T v;
-		s >> v;
+	T v;
+	unsigned int oldSize( vec.size() );
+	while ( s >> v )
 		vec.push_back( v );
+	if ( !s.eof() )
+	{
+		std::cerr << "Error ! Mismatch type: " << typeid(T).name() << " expected. Ring/Polygon discarded!" << std::endl;
+		vec.resize( oldSize );
 	}
 }
 
 template<class T> inline void parseVecList( std::stringstream &s, std::vector<T> &vec, GeoTransform* transform ) 
 {
-	while ( !s.eof() )
+	T v;
+	unsigned int oldSize( vec.size() );
+	while ( s >> v )
 	{
-		T v;
-		s >> v;
 		if ( transform ) transform->transform( v );
 		vec.push_back( v );
+	}
+	if ( !s.eof() )
+	{
+		std::cerr << "Error ! Mismatch type: " << typeid(T).name() << " expected. Ring/Polygon discarded!" << std::endl;
+		vec.resize( oldSize );
 	}
 }
 
