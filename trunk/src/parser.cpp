@@ -23,6 +23,10 @@
 #include "transform.h"
 #include "utils.h"
 
+#ifndef MSVC
+	#include <typeinfo>
+#endif
+
 using namespace citygml;
 
 std::map<std::string, CityGMLNodeType> CityGMLHandler::s_cityGMLNodeTypeMap;
