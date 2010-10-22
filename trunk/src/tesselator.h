@@ -21,8 +21,15 @@
 #	include <windows.h>
 #else
 #	define CALLBACK
+#	define APIENTRY
 #endif
-#include "GL/glu.h"
+
+#ifdef __APPLE__
+  #include <OpenGL/glu.h>
+#else
+  #include <GL/glu.h>
+#endif
+
 #include "vecs.h"
 #include <vector>
 

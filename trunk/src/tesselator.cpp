@@ -18,6 +18,9 @@
 */
 
 #include "tesselator.h"
+#ifndef WIN32
+#	include <stdint.h>
+#endif
 
 Tesselator* Tesselator::_instance = 0;
 
@@ -83,7 +86,7 @@ void CALLBACK Tesselator::beginCallback( GLenum which, void* userData )
 void CALLBACK Tesselator::vertexCallback( GLvoid *data, void* userData ) 
 {
 	Tesselator *tess = (Tesselator*)userData;
-	tess->_curIndices.push_back( (int)data );
+	tess->_curIndices.push_back( (intptr_t)data );
 }
 
 void CALLBACK Tesselator::combineCallback( GLdouble coords[3], void* vertex_data[4], GLfloat weight[4], void** outData, void* userData )
