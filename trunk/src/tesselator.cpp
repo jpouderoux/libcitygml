@@ -89,7 +89,7 @@ void CALLBACK Tesselator::vertexCallback( GLvoid *data, void* userData )
 	tess->_curIndices.push_back( (intptr_t)data );
 }
 
-void CALLBACK Tesselator::combineCallback( GLdouble coords[3], void* vertex_data[4], GLfloat weight[4], void** outData, void* userData )
+void CALLBACK Tesselator::combineCallback( GLdouble coords[3], void* /*vertex_data*/[4], GLfloat /*weight*/[4], void** outData, void* userData )
 {
 	Tesselator *tess = (Tesselator*)userData;
 	unsigned int npoint = tess->_vertices.size();
@@ -133,7 +133,7 @@ void CALLBACK Tesselator::endCallback( void* userData )
 	tess->_curIndices.clear();
 }
 
-void CALLBACK Tesselator::errorCallback( GLenum errorCode, void* userData )
+void CALLBACK Tesselator::errorCallback( GLenum errorCode, void* /*userData*/ )
 {
 	std::cerr << "CityGML tesselator error: " << gluErrorString( errorCode ) << std::endl;
 }
