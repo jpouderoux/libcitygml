@@ -4,23 +4,19 @@
 // Copyright(c) 2010 Joachim Pouderoux, BRGM
 //////////////////////////////////////////////////////////////////////////
 
-#include <osg/Notify>
 #include <osg/Node>
-#include <osg/Geometry>
-#include <osg/ProxyNode>
-#include <osg/MatrixTransform>
+#include <osg/PositionAttitudeTransform>
 #include <osg/Geode>
 #include <osg/Geometry>
 #include <osg/StateSet>
-#include <osg/BlendEquation>
+#include <osg/BlendFunc>
+#include <osg/BlendColor>
 #include <osg/Material>
 #include <osg/Texture2D>
 #include <osg/TexGen>
 #include <osg/TexMat>
-#include <osg/ShapeDrawable>
-#include <osg/Shape>
+#include <osg/Depth>
 #include <osg/LightModel>
-#include <osg/Point>
 
 #include <osgText/Font>
 #include <osgText/Text>
@@ -35,7 +31,6 @@
 
 #include <algorithm>
 #include <cctype> 
-
 
 class ReaderWriterCityGML : public osgDB::ReaderWriter
 {
@@ -55,12 +50,14 @@ public:
 	virtual const char* className( void ) const { return "CityGML Reader"; }
 
 	virtual ReadResult readNode( const std::string&, const osgDB::ReaderWriter::Options* ) const;
+	virtual ReadResult readNode( std::istream&, const osgDB::ReaderWriter::Options* ) const;
 
 private:
 	class Settings 
 	{
 	public:
-		Settings( void ) : _printNames( false ) {}
+		Settings( void ) : _printNames( false ),
+			_first(true), _origin( 0.f, 0.f, 0.f ) {}
 
 		void parseOptions( const osgDB::ReaderWriter::Options* options)
 		{
@@ -80,12 +77,15 @@ private:
 		}
 
 	public:
-		bool _printNames;
 		citygml::ParserParams _params;
+		bool _printNames;
+		bool _first;
+		osg::Vec3 _origin;
 		std::map< std::string, osg::Texture2D* > _textureMap;
 	};
 
 private:
+	ReadResult readCity( const citygml::CityModel *, Settings& ) const;
 	bool createCityObject( const citygml::CityObject*, Settings&, osg::Group* ) const;
 };
 
@@ -96,10 +96,12 @@ REGISTER_OSGPLUGIN( citygml, ReaderWriterCityGML )
 osgDB::ReaderWriter::ReadResult ReaderWriterCityGML::readNode( const std::string& file, const osgDB::ReaderWriter::Options* options ) const
 {
 	std::string ext = osgDB::getLowerCaseFileExtension( file );
+	
 	if ( !acceptsExtension( ext ) ) return ReadResult::FILE_NOT_HANDLED;
 
 	// try to open the file as is
 	std::string fileName = osgDB::findDataFile( file, options );
+	
 	if ( fileName.empty() )
 	{
 		// not found, so remove the .citygml extension file
@@ -121,20 +123,63 @@ osgDB::ReaderWriter::ReadResult ReaderWriterCityGML::readNode( const std::string
 
 	citygml::CityModel *city = citygml::load( fileName, settings._params );
 
-	if ( !city ) return 0;
+    ReadResult rr = readCity( city, settings );
+
+	if ( rr.status() == ReadResult::FILE_LOADED && rr.getNode() )
+		rr.getNode()->setName( fileName );
+
+	delete city;
+
+	osgDB::getDataFilePathList().pop_front();
+
+	// Restore cout/cerr streams
+	std::cout.rdbuf( coutsb );
+	std::cerr.rdbuf( cerrsb );
+
+	return rr;
+}
+
+osgDB::ReaderWriter::ReadResult ReaderWriterCityGML::readNode( std::istream& fin, const osgDB::ReaderWriter::Options* options ) const
+{
+	Settings settings;
+	settings.parseOptions( options );
+
+	// Redirect both std::cout & std::cerr (used by CityGML parser) to osg::notify stream
+	std::streambuf* coutsb = std::cout.rdbuf( osg::notify(osg::NOTICE).rdbuf() );
+	std::streambuf* cerrsb = std::cerr.rdbuf( osg::notify(osg::NOTICE).rdbuf() );
+
+	OSG_NOTICE << "Parsing CityGML stream..." << std::endl;
+
+	citygml::CityModel *city = citygml::load( fin, settings._params );
+	
+	ReadResult rr = readCity( city, settings );
+
+	delete city;
+
+	// Restore cout/cerr streams
+	std::cout.rdbuf( coutsb );
+	std::cerr.rdbuf( cerrsb );
+
+	return rr;
+}
+
+osgDB::ReaderWriter::ReadResult ReaderWriterCityGML::readCity( const citygml::CityModel * city, Settings& settings ) const
+{
+	if ( !city ) return NULL;
 
 	osg::notify(osg::NOTICE) << city->size() << " city objects read." << std::endl;
-
+	
 	osg::notify(osg::NOTICE) << "Creation of the OSG city objects' geometry..." << std::endl;
-
-	osg::Group* root = new osg::Group();
-	root->setName( fileName );
+	
+	//osg::Group* root = new osg::Group();
+    // TEMP HACK: to avoid artefacts because of float uncertainty
+	osg::PositionAttitudeTransform* root = new osg::PositionAttitudeTransform();
+	root->setName( city->getId() );
 
 #define RECURSIVE_DUMP
 
 #ifndef RECURSIVE_DUMP
 	const citygml::CityObjectsMap& cityObjectsMap = city->getCityObjectsMap();
-
 	citygml::CityObjectsMap::const_iterator it = cityObjectsMap.begin();
 
 	for ( ; it != cityObjectsMap.end(); ++it )
@@ -147,22 +192,18 @@ osgDB::ReaderWriter::ReadResult ReaderWriterCityGML::readNode( const std::string
 		grp->setName( citygml::getCityObjectsClassName( it->first ) );
 		root->addChild( grp );
 
-		for ( unsigned int i = 0; i < v.size(); i++ ) createCityObject( v[i], settings, grp ) )		
+		for ( unsigned int i = 0; i < v.size(); ++i )
+			createCityObject( v[i], settings, grp ) );	
 	}
 #else
+
 	const citygml::CityObjects& roots = city->getCityObjectsRoots();
 
-	for ( unsigned int i = 0; i < roots.size(); i++ ) createCityObject( roots[i], settings, root );
+	for ( unsigned int i = 0; i < roots.size(); ++i ) createCityObject( roots[i], settings, root );
 #endif
-
 	osg::notify(osg::NOTICE) << "Done." << std::endl;
 
-	delete city;
-
-	// Restore cout/cerr streams
-	std::cout.rdbuf( coutsb );
-	std::cerr.rdbuf( cerrsb );
-
+	root->setPosition( settings._origin );
 	return root;
 }
 
@@ -182,7 +223,6 @@ bool ReaderWriterCityGML::createCityObject( const citygml::CityObject* object, S
 #else
 	parent->addChild( geode )
 #endif
-	//osg::notify(osg::NOTICE) << "Creating object " << object->getId() << std::endl;
 
 	// Get the default color for the whole city object
 	osg::ref_ptr<osg::Vec4Array> shared_colors = new osg::Vec4Array;
@@ -198,11 +238,12 @@ bool ReaderWriterCityGML::createCityObject( const citygml::CityObject* object, S
 		for ( unsigned int j = 0; j < geometry.size(); j++ ) 
 		{
 			const citygml::Polygon* p = geometry[j];
+
 			if ( p->getIndices().size() == 0 ) continue;
 
 			// Geometry management
 
-			osg::Geometry* geom = new osg::Geometry();
+			osg::Geometry* geom = new osg::Geometry;
 
 			// Vertices
 			osg::Vec3Array* vertices = new osg::Vec3Array;
@@ -211,7 +252,12 @@ bool ReaderWriterCityGML::createCityObject( const citygml::CityObject* object, S
 			for ( unsigned int k = 0; k < vert.size(); k++ )
 			{
 				osg::Vec3d pt( vert[k].x, vert[k].y, vert[k].z );
-				vertices->push_back( pt );
+                if ( settings._first )
+				{
+					settings._origin.set( pt );
+					settings._first = false;
+				}
+				vertices->push_back( pt - settings._origin );
 			}
 
 			geom->setVertexArray( vertices );
@@ -226,6 +272,7 @@ bool ReaderWriterCityGML::createCityObject( const citygml::CityObject* object, S
 				indices->push_back( ind[ i * 3 + 1 ] );
 				indices->push_back( ind[ i * 3 + 2 ] );	
 			}
+
 			geom->addPrimitiveSet( indices );
 
 			// Normals			
@@ -267,6 +314,7 @@ bool ReaderWriterCityGML::createCityObject( const citygml::CityObject* object, S
 					material->setEmission( osg::Material::FRONT_AND_BACK, TOVEC4( emissive ) );					
 					material->setShininess( osg::Material::FRONT_AND_BACK, m->getShininess() );					
 					material->setAmbient( osg::Material::FRONT_AND_BACK, osg::Vec4( ambient, ambient, ambient, 1.0 ) );
+					material->setTransparency( osg::Material::FRONT_AND_BACK, m->getTransparency() );
 					stateset->setAttributeAndModes( material, osg::StateAttribute::OVERRIDE | osg::StateAttribute::ON );
 					stateset->setMode( GL_LIGHTING, osg::StateAttribute::OVERRIDE | osg::StateAttribute::ON );
 
@@ -306,6 +354,7 @@ bool ReaderWriterCityGML::createCityObject( const citygml::CityObject* object, S
 						if ( texture )
 						{
 							osg::ref_ptr<osg::Vec2Array> tex = new osg::Vec2Array;
+							
 							tex->reserve( texCoords.size() );
 							for ( unsigned int k = 0; k < texCoords.size(); k++ )
 								tex->push_back( osg::Vec2( texCoords[k].x, texCoords[k].y ) );
@@ -338,14 +387,6 @@ bool ReaderWriterCityGML::createCityObject( const citygml::CityObject* object, S
 		}
 	}
 
-	// Manage transparency for windows
-	if ( object->getType() == citygml::COT_Window )
-	{
-		osg::StateSet* state = geode->getOrCreateStateSet();    
-		state->setAttributeAndModes( new osg::BlendEquation( osg::BlendEquation::FUNC_ADD ), osg::StateAttribute::OVERRIDE|osg::StateAttribute::ON );
-   		state->setRenderingHint( osg::StateSet::TRANSPARENT_BIN );
-	}
-
 	if ( settings._printNames ) 
 	{
 		// Print the city object name on top of it
@@ -364,9 +405,27 @@ bool ReaderWriterCityGML::createCityObject( const citygml::CityObject* object, S
 		geode->addDrawable( text.get() );
 	}
 
+	// Manage transparency for windows
+	if ( object->getType() == citygml::COT_Window )
+	{
+		osg::StateSet *geodeSS( geode->getOrCreateStateSet() );
+
+        osg::ref_ptr<osg::BlendFunc> blendFunc = new osg::BlendFunc(osg::BlendFunc::ONE_MINUS_CONSTANT_ALPHA,osg::BlendFunc::CONSTANT_ALPHA);
+		geodeSS->setAttributeAndModes( blendFunc.get(), osg::StateAttribute::OVERRIDE|osg::StateAttribute::ON );
+
+        osg::ref_ptr<osg::BlendColor> blendColor = new osg::BlendColor(osg::Vec4( 1., 1., 1., object->getDefaultColor().a ));
+		geodeSS->setAttributeAndModes( blendColor.get(), osg::StateAttribute::OVERRIDE|osg::StateAttribute::ON );
+
+        osg::ref_ptr<osg::Depth> depth = new osg::Depth;
+        depth->setWriteMask( false );
+        geodeSS->setAttributeAndModes( depth.get(), osg::StateAttribute::OVERRIDE|osg::StateAttribute::ON );
+   
+		geodeSS->setRenderingHint(osg::StateSet::TRANSPARENT_BIN);
+	}
+
 #ifdef RECURSIVE_DUMP
-	for ( unsigned int i = 0; i < object->getChildCount(); i++ )
-		createCityObject( object->getChild(i), settings, grp );
+	for ( unsigned int i = 0; i < object->getChildCount(); ++i )
+        createCityObject( object->getChild(i), settings, grp );
 #endif
 
 	return true;

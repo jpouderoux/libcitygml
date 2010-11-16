@@ -47,10 +47,13 @@ public:
 #endif
 	}
 
+#ifdef USE_GDAL
 	inline void transform( TVec3d &p ) const
 	{
-#ifdef USE_GDAL
 		if ( _trans ) ((OGRCoordinateTransformation*)_trans)->Transform( 1, &p.x, &p.y );
+#else
+	inline void transform( TVec3d & ) const
+	{
 #endif
 	}
 
