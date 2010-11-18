@@ -1,6 +1,8 @@
 # Locate libcitygml
 # This module defines
 # CITYGML_LIBRARY
+# CITYGML_LIBRARY_DEBUG 
+# CITYGML_LIBRARIES, choses the correct debug or optimized library for linking, add this as Target Link library in your project
 # CITYGML_FOUND, if false, do not try to link to CITYGML 
 # CITYGML_INCLUDE_DIR, where to find the headers
 #
@@ -97,7 +99,9 @@ IF(CITYGML_LIBRARY AND CITYGML_INCLUDE_DIR)
 	IF(NOT CITYGML_LIBRARY_DEBUG)
 		MESSAGE("-- Warning Debug LibCityGML not found, using: ${CITYGML_LIBRARY}")
 		SET(CITYGML_LIBRARY_DEBUG "${CITYGML_LIBRARY}" CACHE FILEPATH "Path to a library." FORCE)
+	ELSE(NOT CITYGML_LIBRARY_DEBUG)
+		#set the conditional linking library if debug is present
+		SET(CITYGML_LIBRARIES optimized ${CITYGML_LIBRARY} debug ${CITYGML_LIBRARY_DEBUG})
 	ENDIF(NOT CITYGML_LIBRARY_DEBUG)
 ENDIF(CITYGML_LIBRARY AND CITYGML_INCLUDE_DIR)
-
 
