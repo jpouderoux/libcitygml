@@ -89,6 +89,7 @@ namespace citygml
 
 		// bldg
 		NODETYPE( Building ),
+		NODETYPE( BuildingPart ),
 		NODETYPE( Room ),
 		NODETYPE( Door ),
 		NODETYPE( Window ),
