@@ -69,6 +69,7 @@ namespace citygml
 		COT_BridgeConstructionElement	= 1 << 19,
 		COT_BridgeInstallation			= 1 << 20, 
 		COT_BridgePart                  = 1 << 21,
+		COT_BuildingPart                = 1 << 22,
 		COT_All                         = 0xFFFFFF
 	};
 
@@ -479,6 +480,8 @@ namespace citygml
 	///////////////////////////////////////////////////////////////////////////////
 
 	DECLARE_SIMPLE_OBJECT_CLASS( Building, MAKE_RGB( 186, 184, 135 ) );
+
+	DECLARE_SIMPLE_OBJECT_CLASS( BuildingPart, MAKE_RGB( 186, 184, 135 ) );
 
 	DECLARE_SIMPLE_OBJECT_CLASS( Room, MAKE_RGB( 181, 180, 163 ) );
 

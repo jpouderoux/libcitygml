@@ -102,6 +102,7 @@ void CityGMLHandler::initNodes( void )
 
 	// bldg
 	INSERTNODETYPE( Building );
+	INSERTNODETYPE( BuildingPart );
 	INSERTNODETYPE( Room );
 	INSERTNODETYPE( Door );
 	INSERTNODETYPE( Window );
@@ -310,6 +311,7 @@ void CityGMLHandler::startElement( const std::string& name, void* attributes )
 
 		MANAGE_OBJECT( GenericCityObject );
 		MANAGE_OBJECT( Building );
+		MANAGE_OBJECT( BuildingPart );
 		MANAGE_OBJECT( Room );
 		MANAGE_OBJECT( BuildingInstallation );
 		MANAGE_OBJECT( BuildingFurniture );
@@ -478,6 +480,7 @@ void CityGMLHandler::endElement( const std::string& name )
 
 	case NODETYPE( GenericCityObject ):
 	case NODETYPE( Building ):
+	case NODETYPE( BuildingPart ):
 	case NODETYPE( Room ):
 	case NODETYPE( BuildingInstallation ):
 	case NODETYPE( BuildingFurniture ):

@@ -445,6 +445,7 @@ namespace citygml
 
 			COMPARECITYNAMEMASK( GenericCityObject );
 			COMPARECITYNAMEMASK( Building );
+			COMPARECITYNAMEMASK( BuildingPart );
 			COMPARECITYNAMEMASK( Room );
 			COMPARECITYNAMEMASK( BuildingInstallation );
 			COMPARECITYNAMEMASK( BuildingFurniture );
