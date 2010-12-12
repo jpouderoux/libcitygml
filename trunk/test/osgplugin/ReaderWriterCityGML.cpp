@@ -148,7 +148,7 @@ osgDB::ReaderWriter::ReadResult ReaderWriterCityGML::readNode( std::istream& fin
 	std::streambuf* coutsb = std::cout.rdbuf( osg::notify(osg::NOTICE).rdbuf() );
 	std::streambuf* cerrsb = std::cerr.rdbuf( osg::notify(osg::NOTICE).rdbuf() );
 
-	OSG_NOTICE << "Parsing CityGML stream..." << std::endl;
+	osg::notify(osg::NOTICE) << "Parsing CityGML stream..." << std::endl;
 
 	citygml::CityModel *city = citygml::load( fin, settings._params );
 	
