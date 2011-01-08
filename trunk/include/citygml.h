@@ -130,8 +130,9 @@ namespace citygml
 		TVec3d _upperBound;
 	};
 
+	typedef std::map< std::string, std::string > AttributesMap;
 	///////////////////////////////////////////////////////////////////////////////
-	// Base object associated with an unique id and a set of properties (key-value pairs)
+	// Base object associated with an unique id and a set of attributes (key-value pairs)
 	class Object 
 	{
 		friend class CityGMLHandler;
@@ -143,22 +144,24 @@ namespace citygml
 
 		inline const std::string& getId( void ) const { return _id; }
 
-		inline std::string getProp( const std::string& name ) const
+		inline std::string getAttribute( const std::string& name ) const
 		{
-			std::map< std::string, std::string >::const_iterator elt = _properties.find( name );
-			return elt != _properties.end() ? elt->second : "";
+			std::map< std::string, std::string >::const_iterator elt = _attributes.find( name );
+			return elt != _attributes.end() ? elt->second : "";
 		}
 
+		inline AttributesMap& getAttributes() { return _attributes; }
+
 	protected:
-		inline void setProp( const std::string& name, const std::string& value )
+		inline void setAttribute( const std::string& name, const std::string& value )
 		{
-			_properties[ name ] = value;
+			_attributes[ name ] = value;
 		}
 
 	protected:
 		std::string _id;
 
-		std::map< std::string, std::string > _properties;
+		AttributesMap _attributes;
 	};
 
 	///////////////////////////////////////////////////////////////////////////////
@@ -530,7 +533,7 @@ namespace citygml
 
 		inline TVec4f getDefaultColor( void ) const
 		{ 
-			std::string c = getProp( "class" );
+			std::string c = getAttribute( "class" );
 			if ( c != "" )
 			{
 				int cl = atoi( c.c_str() );
