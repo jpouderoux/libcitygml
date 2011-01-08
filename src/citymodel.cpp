@@ -61,8 +61,8 @@ namespace citygml
 		os << o.getType() << ": " << o.getId() << std::endl;
 		os << "  Envelope: " << o.getEnvelope() << std::endl;
 
-		std::map< std::string, std::string >::const_iterator it = o._properties.begin();
-		while ( it != o._properties.end() )
+		AttributesMap::const_iterator it = o._attributes.begin();
+		while ( it != o._attributes.end() )
 		{
 			os << "  + " << it->first << ": " << it->second << std::endl;
 			it++;
