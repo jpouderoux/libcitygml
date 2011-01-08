@@ -152,6 +152,8 @@ namespace citygml
 
 		inline AttributesMap& getAttributes() { return _attributes; }
 
+		inline const AttributesMap& getAttributes() const { return _attributes; }
+
 	protected:
 		inline void setAttribute( const std::string& name, const std::string& value )
 		{
