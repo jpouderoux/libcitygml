@@ -454,9 +454,13 @@ namespace citygml
 		// Access the children
 		inline unsigned int getChildCount( void ) const { return _children.size(); }
 
+		inline CityObject* getChild( unsigned int i ) { return ( i < getChildCount() ) ? _children[i] : 0; }
+
 		inline const CityObject* getChild( unsigned int i ) const { return ( i < getChildCount() ) ? _children[i] : 0; }
 
 		inline std::vector< CityObject* >& getChildren( void ) { return _children; }
+		
+		inline const std::vector< CityObject* >& getChildren( void ) const { return _children; }
 
 	protected:
 		void finish( AppearanceManager&, bool optimize );
