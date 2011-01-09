@@ -150,9 +150,9 @@ namespace citygml
 			return elt != _attributes.end() ? elt->second : "";
 		}
 
-		inline AttributesMap& getAttributes() { return _attributes; }
-
 		inline const AttributesMap& getAttributes() const { return _attributes; }
+
+		inline AttributesMap& getAttributes() { return _attributes; }
 
 	protected:
 		inline void setAttribute( const std::string& name, const std::string& value )
@@ -454,13 +454,13 @@ namespace citygml
 		// Access the children
 		inline unsigned int getChildCount( void ) const { return _children.size(); }
 
-		inline CityObject* getChild( unsigned int i ) { return ( i < getChildCount() ) ? _children[i] : 0; }
-
 		inline const CityObject* getChild( unsigned int i ) const { return ( i < getChildCount() ) ? _children[i] : 0; }
 
-		inline std::vector< CityObject* >& getChildren( void ) { return _children; }
-		
+		inline CityObject* getChild( unsigned int i ) { return ( i < getChildCount() ) ? _children[i] : 0; }
+
 		inline const std::vector< CityObject* >& getChildren( void ) const { return _children; }
+
+		inline std::vector< CityObject* >& getChildren( void ) { return _children; }
 
 	protected:
 		void finish( AppearanceManager&, bool optimize );
