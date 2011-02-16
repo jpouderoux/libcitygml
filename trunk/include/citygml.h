@@ -155,9 +155,14 @@ namespace citygml
 		inline AttributesMap& getAttributes() { return _attributes; }
 
 	protected:
-		inline void setAttribute( const std::string& name, const std::string& value )
+		inline void setAttribute( const std::string& name, const std::string& value, bool forceOnExist = true )
 		{
-			_attributes[ name ] = value;
+			if ( !forceOnExist )
+			{
+				std::map< std::string, std::string >::const_iterator elt = _attributes.find( name );
+				if ( elt != _attributes.end() ) return;
+			}
+			_attributes[ name ] = value;				
 		}
 
 	protected:
