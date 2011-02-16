@@ -585,14 +585,14 @@ void CityGMLHandler::endElement( const std::string& name )
 	case NODETYPE( measuredHeight ):
 	case NODETYPE( creationDate ):
 	case NODETYPE( terminationDate ):
-		if ( _currentCityObject ) _currentCityObject->setAttribute( localname, buffer.str() );
+		if ( _currentCityObject ) _currentCityObject->setAttribute( localname, buffer.str(), false );
 		break;
 
 	case NODETYPE( value ):
 		if ( _attributeName != "" && _currentCityObject )
 		{
-			if ( _currentCityObject ) _currentCityObject->setAttribute( _attributeName, buffer.str() );
-			else if ( _model && getPathDepth() == 1 ) _model->setAttribute( _attributeName, buffer.str() );
+			if ( _currentCityObject ) _currentCityObject->setAttribute( _attributeName, buffer.str(), false );
+			else if ( _model && getPathDepth() == 1 ) _model->setAttribute( _attributeName, buffer.str(), false );
 		}
 		break;
 
