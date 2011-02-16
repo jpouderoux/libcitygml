@@ -100,6 +100,20 @@ namespace citygml
 		NODETYPE( type ),
 		NODETYPE( function ),
 		NODETYPE( usage ),
+		NODETYPE( yearOfConstruction ),
+		NODETYPE( yearOfDemolition ),
+		NODETYPE( storeysAboveGround ),
+		NODETYPE( storeysBelowGround ),
+		NODETYPE( storeyHeightsAboveGround ),
+		NODETYPE( storeyHeightsBelowGround ),
+
+		// address
+		NODETYPE( administrativearea ),
+		NODETYPE( country ),
+		NODETYPE( code ),
+		NODETYPE( street ),
+		NODETYPE( postalCode ),
+		NODETYPE( city ),
 
 		// BoundarySurfaceType
 		NODETYPE( WallSurface ),
