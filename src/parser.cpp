@@ -112,7 +112,21 @@ void CityGMLHandler::initNodes( void )
 	INSERTNODETYPE( class );
 	INSERTNODETYPE( type );
 	INSERTNODETYPE( function );
-	INSERTNODETYPE( usage )
+	INSERTNODETYPE( usage );
+	INSERTNODETYPE( yearOfConstruction );
+	INSERTNODETYPE( yearOfDemolition );
+	INSERTNODETYPE( storeysAboveGround );
+	INSERTNODETYPE( storeysBelowGround );
+	INSERTNODETYPE( storeyHeightsAboveGround );
+	INSERTNODETYPE( storeyHeightsBelowGround );
+
+	// address
+	INSERTNODETYPE( administrativearea );
+	INSERTNODETYPE( country );
+	INSERTNODETYPE( code );
+	INSERTNODETYPE( street );
+	INSERTNODETYPE( postalCode );
+	INSERTNODETYPE( city );
 
 	// BoundarySurfaceType
 	INSERTNODETYPE( WallSurface );
@@ -556,6 +570,18 @@ void CityGMLHandler::endElement( const std::string& name )
 	case NODETYPE( type ):
 	case NODETYPE( function ):
 	case NODETYPE( usage ):
+	case NODETYPE( yearOfConstruction ):
+	case NODETYPE( yearOfDemolition ):
+	case NODETYPE( storeysAboveGround ):
+	case NODETYPE( storeysBelowGround ):
+	case NODETYPE( storeyHeightsAboveGround ):
+	case NODETYPE( storeyHeightsBelowGround ):
+	case NODETYPE( administrativearea ):
+	case NODETYPE( country ):
+	case NODETYPE( code ):
+	case NODETYPE( street ):
+	case NODETYPE( postalCode ):
+	case NODETYPE( city ):
 	case NODETYPE( measuredHeight ):
 	case NODETYPE( creationDate ):
 	case NODETYPE( terminationDate ):
