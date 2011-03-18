@@ -400,7 +400,8 @@ namespace citygml
 #define GETCITYNAME( _t_ ) if ( mask & COT_ ## _t_ ) ss << # _t_ << "|";
 		std::stringstream ss;
 		GETCITYNAME( GenericCityObject );
-		GETCITYNAME( Building );
+        GETCITYNAME( Building );
+		GETCITYNAME( BuildingPart );
 		GETCITYNAME( Room );
 		GETCITYNAME( BuildingInstallation );
 		GETCITYNAME( BuildingFurniture );
@@ -421,7 +422,6 @@ namespace citygml
 		GETCITYNAME( BridgeConstructionElement );
 		GETCITYNAME( BridgeInstallation );
 		GETCITYNAME( BridgePart );
-		GETCITYNAME( GenericCityObject );
 #undef GETCITYNAME
 		std::string s = ss.str();
 		if ( s != "" ) s.erase( s.length() - 1, 1 ); // remove the last | char
