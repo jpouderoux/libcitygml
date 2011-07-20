@@ -244,7 +244,7 @@ namespace citygml
 		int indicesSize = 3 * ( _vertices.size() - 2 );
 		if ( indicesSize < 3 ) return;
 		_indices.resize( indicesSize );
-		for ( int i = 0, p = 0; i < indicesSize - 2; i++, p += 3 )
+		for ( int i = 0, p = 0; p < indicesSize - 2; i++, p += 3 )
 			for ( unsigned int j = 0; j < 3; j++ )
 				_indices[ p + j ] = i + j;
 	}
