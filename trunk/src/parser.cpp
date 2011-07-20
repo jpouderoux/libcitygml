@@ -237,10 +237,16 @@ template<class T> inline void parseValue( std::stringstream &s, T &v )
 	if ( !s.eof() ) s >> v;
 }
 
-template<class T> inline void parseValue( std::stringstream &s, T &v, GeoTransform* transform ) 
+template<class T> inline void parseValue( std::stringstream &s, T &v, GeoTransform* transform, const TVec3d &translate ) 
 {
 	parseValue( s, v );
+	
 	if ( transform ) transform->transform( v );
+	
+	// Translate based on bounding box of whole model
+	v[0] -= translate[0];
+	v[1] -= translate[1];
+	v[2] -= translate[2];
 }
 
 template<class T> inline void parseVecList( std::stringstream &s, std::vector<T> &vec ) 
@@ -256,13 +262,19 @@ template<class T> inline void parseVecList( std::stringstream &s, std::vector<T>
 	}
 }
 
-template<class T> inline void parseVecList( std::stringstream &s, std::vector<T> &vec, GeoTransform* transform ) 
+template<class T> inline void parseVecList( std::stringstream &s, std::vector<T> &vec, GeoTransform* transform, const TVec3d &translate ) 
 {
 	T v;
 	unsigned int oldSize( vec.size() );
 	while ( s >> v )
 	{
 		if ( transform ) transform->transform( v );
+		
+		// Translate based on bounding box of whole model
+		v[0] -= translate[0];
+		v[1] -= translate[1];
+		v[2] -= translate[2];
+		
 		vec.push_back( v );
 	}
 	if ( !s.eof() )
@@ -486,8 +498,23 @@ void CityGMLHandler::endElement( const std::string& name )
 	case NODETYPE( CityModel ):
 		MODEL_FILTER();
 		_model->finish( _params.optimize );
-		if ( _geoTransform ) {  std::cout << "The coordinates were transformed from " << _model->_srsName << " to " << ((GeoTransform*)_geoTransform)->getDestURN() << std::endl; _model->_srsName = ((GeoTransform*)_geoTransform)->getDestURN(); }
-		if ( _model->_srsName == "" ) { _model->_srsName = _params.destSRS; std::cerr << "Warning: No SRS was set in the file. The model SRS has been set without transformation to " << _params.destSRS << std::endl; }
+		if ( _geoTransform )
+		{
+			std::cout << "The coordinates were transformed from " << _model->_srsName << " to "
+								<< ((GeoTransform*)_geoTransform)->getDestURN() << std::endl;
+			_model->_srsName = ((GeoTransform*)_geoTransform)->getDestURN();
+		}
+		if ( _model->_srsName == "" )
+		{
+			_model->_srsName = _params.destSRS;
+			std::cerr << "Warning: No SRS was set in the file. The model SRS has been set "
+									"without transformation to " << _params.destSRS << std::endl;
+		}
+		
+		_model->_translation = _translate;
+		std::cout << std::fixed << "The model coordinates were translated by x:" << _translate.x
+				      << " y:" << _translate.y << " z:" << _translate.z << std::endl;
+		
 		break;
 
 		// City objects management
@@ -534,6 +561,34 @@ void CityGMLHandler::endElement( const std::string& name )
 			{
 				_model->_envelope._lowerBound = _points[0];
 				_model->_envelope._upperBound = _points[1];
+				
+				// Translation works only if model as an envelope on CityModel set
+				// It is assumed that the envelope is correct and valid
+				// If there is no envelope set the translation parameters are zero
+				// and no translation of the model will be applied -> but also no
+				// correct tesselation will be possible
+				_translate[0] = _model->_envelope._lowerBound.x;
+				_translate[1] = _model->_envelope._lowerBound.y;
+				_translate[2] = _model->_envelope._lowerBound.z;
+
+				// Possible optimization 1: Make a first scan through whole document
+				// and compute correct envelope if no one is present. Afterwards
+				// start the real parsing.
+
+				// Possible optimization 2: Implement scaling so the model coordinates
+				// are between 0 and 1.
+
+				// Currently not implemented: The Citygml object model should have its
+				// real coordinates in dest SRS after parsing. Currently the translation
+				// parameters are applied to the coordinates in dest SRS. What needs still
+				// to be implemented is that after tesselation the coordinates are translated
+				// back. Only for visualisation e.g. via OSG the saved translation parameters
+				// should be applied before creation of OSG geometry.
+				
+				// The envelope is already transformed to destination SRS
+				// so we now translation parameters in dest SRS and recompute envelope
+				_model->_envelope._lowerBound = _model->_envelope._lowerBound - _translate;
+				_model->_envelope._upperBound = _model->_envelope._upperBound - _translate;
 			}
 			else if ( _currentCityObject )
 			{
@@ -548,7 +603,7 @@ void CityGMLHandler::endElement( const std::string& name )
 	case NODETYPE( upperCorner ):
 		{
 			TVec3d p;
-			parseValue( buffer, p, (GeoTransform*)_geoTransform );
+			parseValue( buffer, p, (GeoTransform*)_geoTransform, _translate );
 			if ( nodeType == NODETYPE( lowerCorner ) )
 				_points.insert( _points.begin(), p );
 			else
@@ -631,7 +686,7 @@ void CityGMLHandler::endElement( const std::string& name )
 		if ( _currentCityObject )
 		{
 			TVec3d p;
-			parseValue( buffer, p, (GeoTransform*)_geoTransform );
+			parseValue( buffer, p, (GeoTransform*)_geoTransform, _translate );
 			if ( !_currentPolygon )
 				_points.push_back( p );
 			else if ( _currentRing )
@@ -641,10 +696,10 @@ void CityGMLHandler::endElement( const std::string& name )
 
 	case NODETYPE( coordinates ):
 	case NODETYPE( posList ):
-		if ( !_currentPolygon ) { parseVecList( buffer, _points, (GeoTransform*)_geoTransform ); break; }
+		if ( !_currentPolygon ) { parseVecList( buffer, _points, (GeoTransform*)_geoTransform, _translate ); break; }
 		_currentPolygon->_negNormal = ( _orientation != '+' );
 		if ( _currentRing ) 
-			parseVecList( buffer, _currentRing->getVertices(), (GeoTransform*)_geoTransform );
+			parseVecList( buffer, _currentRing->getVertices(), (GeoTransform*)_geoTransform, _translate );
 		break;
 
 	case NODETYPE( interior ):
@@ -669,7 +724,7 @@ void CityGMLHandler::endElement( const std::string& name )
 
 	case NODETYPE( target ):
 		MODEL_FILTER();
-		if ( _currentAppearance )
+		if ( _currentAppearance && !_appearanceAssigned )
 		{
 			std::string uri = buffer.str();
 			if ( uri != "" ) 
@@ -685,7 +740,7 @@ void CityGMLHandler::endElement( const std::string& name )
 		if ( Texture* texture = dynamic_cast<Texture*>( _currentAppearance ) ) 
 		{
 			TexCoords *vec = new TexCoords();
-			parseVecList( buffer, *vec );
+			parseVecList( buffer, *vec );			
 			_model->_appearanceManager.assignTexCoords( vec );	
 		}
 		break;
@@ -697,6 +752,7 @@ void CityGMLHandler::endElement( const std::string& name )
 	case NODETYPE( X3DMaterial ):
 		if ( _currentAppearance && _currentGeometry && !_appearanceAssigned )
 			_model->_appearanceManager.assignNode( _currentGeometry->getId() );
+		_model->_appearanceManager.refresh();
 		_currentAppearance = 0;
 		break;
 

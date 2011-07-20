@@ -5,7 +5,7 @@
 //////////////////////////////////////////////////////////////////////////
 
 #include <osg/Node>
-#include <osg/PositionAttitudeTransform>
+#include <osg/MatrixTransform>
 #include <osg/Geode>
 #include <osg/Geometry>
 #include <osg/StateSet>
@@ -45,6 +45,7 @@ public:
 		supportsOption( "maxLOD", "Maximum LOD level to fetch" );
 		supportsOption( "optimize", "Optimize the geometries & polygons of the CityGML model to reduce the number of instanced objects" );
 		supportsOption( "pruneEmptyObjects", "Prune empty objects (ie. without -supported- geometry)" );
+		supportsOption( "destSRS", "Transform geometry to given reference system" );
 	}
 
 	virtual const char* className( void ) const { return "CityGML Reader"; }
@@ -171,9 +172,12 @@ osgDB::ReaderWriter::ReadResult ReaderWriterCityGML::readCity( const citygml::Ci
 	
 	osg::notify(osg::NOTICE) << "Creation of the OSG city objects' geometry..." << std::endl;
 	
-	//osg::Group* root = new osg::Group();
-    // TEMP HACK: to avoid artefacts because of float uncertainty
-	osg::PositionAttitudeTransform* root = new osg::PositionAttitudeTransform();
+	// Apply translation
+	const TVec3d& t = city->getTranslationParameters();
+	
+	osg::MatrixTransform *root = new osg::MatrixTransform();
+	root->setMatrix(osg::Matrixd::translate(t.x, t.y, t.z));
+
 	root->setName( city->getId() );
 
 #define RECURSIVE_DUMP
@@ -203,7 +207,6 @@ osgDB::ReaderWriter::ReadResult ReaderWriterCityGML::readCity( const citygml::Ci
 #endif
 	osg::notify(osg::NOTICE) << "Done." << std::endl;
 
-	root->setPosition( settings._origin );
 	return root;
 }
 

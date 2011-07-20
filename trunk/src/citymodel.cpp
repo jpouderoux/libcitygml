@@ -140,6 +140,12 @@ namespace citygml
 		for ( ; it != _texCoordsMap.end(); ++it ) delete it->second;
 	}
 
+	void AppearanceManager::refresh( void )
+	{
+		_lastCoords = 0;
+		_lastId = "";
+	}
+
 	void AppearanceManager::addAppearance( Appearance* app ) 
 	{ 
 		if ( app ) _appearances.push_back( app ); 

@@ -275,6 +275,8 @@ namespace citygml
 		
 		CityModel* _model;
 
+		TVec3d _translate;
+
 		CityObject* _currentCityObject;
 		std::stack<CityObject*> _cityObjectStack;
 
