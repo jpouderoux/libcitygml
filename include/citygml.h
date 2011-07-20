@@ -262,6 +262,8 @@ namespace citygml
 		}
 
 	protected:
+		void refresh( void );
+
 		void addAppearance( Appearance* );
 		void assignNode( const std::string& nodeid );
 		bool assignTexCoords( TexCoords* );
@@ -577,6 +579,9 @@ namespace citygml
 		// Return the envelope (ie. the bounding box) of the model
 		inline const Envelope& getEnvelope( void ) const { return _envelope; }
 
+		// Return the translation parameters of the model
+		inline const TVec3d& getTranslationParameters( void ) const { return _translation; }
+
 		// Get the number of city objects 
 		inline unsigned int size( void ) const
 		{ 
@@ -616,6 +621,8 @@ namespace citygml
 		AppearanceManager _appearanceManager;
 
 		std::string _srsName;
+		
+		TVec3d _translation;
 	};
 
 	///////////////////////////////////////////////////////////////////////////////
