@@ -44,6 +44,8 @@ _filterNodeType( false ), _filterDepth( 0 ), _exterior( true ), _geoTransform( 0
 
 CityGMLHandler::~CityGMLHandler( void ) 
 {
+    for ( std::set<Geometry*>::iterator it = _geometries.begin(); it != _geometries.end(); it++ )
+        delete *it;
 }
 
 void CityGMLHandler::initNodes( void ) 
@@ -385,6 +387,7 @@ void CityGMLHandler::startElement( const std::string& name, void* attributes )
 		//_orientation = getAttribute( attributes, "orientation", "+" )[0];
 		_orientation = '+';
 		_currentGeometry = new Geometry( getGmlIdAttribute( attributes ), _currentGeometryType, _currentLOD );
+        _geometries.insert( _currentGeometry );
 		break;
 
 	case NODETYPE( Triangle ):
@@ -665,8 +668,11 @@ void CityGMLHandler::endElement( const std::string& name )
 
 	case NODETYPE( surfaceMember ):
 	case NODETYPE( TriangulatedSurface ):
-		if ( _currentCityObject && _currentGeometry ) 
+		if ( _currentCityObject && _currentGeometry )
+        {
 			_currentCityObject->_geometries.push_back( _currentGeometry );
+            _geometries.erase( _currentGeometry );
+        }
 		else 
 			delete _currentGeometry;
 		_currentGeometry = 0;
@@ -738,10 +744,10 @@ void CityGMLHandler::endElement( const std::string& name )
 	case NODETYPE( textureCoordinates ):
 		MODEL_FILTER();
 		if ( Texture* texture = dynamic_cast<Texture*>( _currentAppearance ) ) 
-		{
+		{            
 			TexCoords *vec = new TexCoords();
 			parseVecList( buffer, *vec );			
-			_model->_appearanceManager.assignTexCoords( vec );	
+			_model->_appearanceManager.assignTexCoords( vec );
 		}
 		break;
 
