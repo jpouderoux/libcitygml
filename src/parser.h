@@ -29,6 +29,7 @@
 #include <algorithm>
 #include <stack>
 #include <fstream>
+#include <set>
 
 namespace citygml
 {	
@@ -281,6 +282,7 @@ namespace citygml
 		std::stack<CityObject*> _cityObjectStack;
 
 		Geometry* _currentGeometry;
+        std::set<Geometry*> _geometries;
 
 		Polygon* _currentPolygon;
 

@@ -268,7 +268,7 @@ namespace citygml
 		void assignNode( const std::string& nodeid );
 		bool assignTexCoords( TexCoords* );
 
-		void finish( void ) { _appearanceMap.clear(); _texCoordsMap.clear(); }
+		void finish( void );
 
 	protected:
 		std::string _lastId;
@@ -279,6 +279,7 @@ namespace citygml
 		std::map<std::string, Appearance*> _appearanceMap;
 
 		std::map<std::string, TexCoords*> _texCoordsMap;
+        std::vector<TexCoords*> _obsoleteTexCoords;
 	};
 
 	///////////////////////////////////////////////////////////////////////////////

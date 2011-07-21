@@ -23,6 +23,7 @@
 #include <string.h>
 
 #include <iterator>
+#include <set>
 
 #ifndef min
 #	define min( a, b ) ( ( ( a ) < ( b ) ) ? ( a ) : ( b ) )
@@ -136,8 +137,23 @@ namespace citygml
 	{
 		for ( unsigned int i = 0; i < _appearances.size(); i++ ) delete _appearances[i];
 
+		std::set<TexCoords*> texCoords;
 		std::map<std::string, TexCoords*>::iterator it = _texCoordsMap.begin();
-		for ( ; it != _texCoordsMap.end(); ++it ) delete it->second;
+	    for ( ; it != _texCoordsMap.end(); ++it )
+        {
+            if(it->second) {
+                if(texCoords.find(it->second) == texCoords.end()) {
+                    texCoords.insert(it->second);
+                    delete it->second;
+                }
+            }
+        }
+
+        for(std::vector<TexCoords*>::iterator it = _obsoleteTexCoords.begin(); it != _obsoleteTexCoords.end(); it++)
+        {
+            if(texCoords.find(*it) == texCoords.end())
+                delete *it;
+        }
 	}
 
 	void AppearanceManager::refresh( void )
@@ -166,12 +182,38 @@ namespace citygml
 	bool AppearanceManager::assignTexCoords( TexCoords* tex ) 
 	{ 
 		_lastCoords = tex;
-		if ( _lastId == "" ) return false;
+        if ( _lastId == "" )
+		{
+            _obsoleteTexCoords.push_back( tex );   
+            return false;
+        }
 		_texCoordsMap[ _lastId ] = tex; 
 		_lastCoords = 0;
 		_lastId = "";
 		return true;
 	}
+
+    void AppearanceManager::finish(void)
+    {
+        std::set<TexCoords*> useLessTexCoords;
+
+		for ( std::map<std::string, TexCoords*>::iterator it = _texCoordsMap.begin(); it != _texCoordsMap.end(); ++it )
+		{
+			if ( it->second && useLessTexCoords.find( it->second ) == useLessTexCoords.end() )
+			{
+				useLessTexCoords.insert( it->second );
+				delete it->second;
+			}
+		}
+
+        for ( std::vector<TexCoords*>::iterator it = _obsoleteTexCoords.begin(); it != _obsoleteTexCoords.end(); it++ )
+            if ( useLessTexCoords.find( *it ) == useLessTexCoords.end() )
+                delete *it;
+
+		_appearanceMap.clear();
+        _texCoordsMap.clear();
+        _obsoleteTexCoords.clear();
+    }
 		
 	///////////////////////////////////////////////////////////////////////////////
 
