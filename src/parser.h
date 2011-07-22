@@ -173,6 +173,8 @@ namespace citygml
 		NODETYPE( textureCoordinates ),
 		NODETYPE( textureType ),
 		NODETYPE( repeat ),
+		NODETYPE( wrapMode ),
+		NODETYPE( borderColor ),
 
 		NODETYPE( X3DMaterial ),
 		NODETYPE( Material ),
