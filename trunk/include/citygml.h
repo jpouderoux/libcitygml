@@ -195,18 +195,34 @@ namespace citygml
 	class Texture : virtual public Appearance
 	{
 		friend class CityGMLHandler;
+
+		typedef enum WrapMode 
+		{
+			WM_NONE = 0,	// the resulting color is fully transparent
+			WM_WRAP,		// the texture is repeated
+			WM_MIRROR,		// the texture is repeated and mirrored
+			WM_CLAMP,		// the texture is clamped to its edges
+			WM_BORDER		// the resulting color is specified by the borderColor element (RGBA)
+		} WrapMode;
+
 	public:
-		Texture( const std::string& id ) : Appearance( id, "Texture" ), _repeat( false ) {}
+		Texture( const std::string& id ) : Appearance( id, "Texture" ), _repeat( false ), _wrapMode( WM_NONE ) {}
 
 		inline std::string getUrl( void ) const { return _url; }
 
 		inline bool getRepeat( void ) const { return _repeat; }
+
+		inline WrapMode getWrapMode( void ) const { return _wrapMode; }
+
+		inline TVec4f getBorderColor( void ) const { return _borderColor; }
 
 		inline std::string toString( void ) const { return Appearance::toString() + " (url: " + _url + ")"; }
 
 	protected:
 		std::string _url;
 		bool _repeat;
+		WrapMode _wrapMode;
+		TVec4f _borderColor;
 	};
 
 	///////////////////////////////////////////////////////////////////////////////
@@ -304,7 +320,7 @@ namespace citygml
 	protected:
 		inline std::vector<TVec3d>& getVertices( void ) { return _vertices; }
 
-		void finish( void );
+		void finish( TexCoords* );
 
 	protected:		
 		bool _exterior;
@@ -343,13 +359,13 @@ namespace citygml
 		inline const Appearance* getAppearance( void ) const { return _appearance; }
 
 	protected:
-		void finish( bool doTriangulate );
-		void finish( AppearanceManager&, Appearance* );
+		void finish( AppearanceManager&, bool doTesselate );
+		void finish( AppearanceManager&, Appearance*,  bool doTesselate );
 
 		void addRing( LinearRing* );
 
-		void tesselate( const TVec3d& );
-		void mergeRings( void );
+		void tesselate( AppearanceManager &, const TVec3d& );
+		void mergeRings( AppearanceManager & );
 		void clearRings( void );
 
 		TVec3d computeNormal( void );
@@ -410,7 +426,7 @@ namespace citygml
 	protected:
 		void addPolygon( Polygon* );
 
-		void finish( AppearanceManager&, Appearance*, bool optimize );
+		void finish( AppearanceManager&, Appearance*, const ParserParams& );
 
 		bool merge( Geometry* );
 
@@ -471,7 +487,7 @@ namespace citygml
 		inline std::vector< CityObject* >& getChildren( void ) { return _children; }
 
 	protected:
-		void finish( AppearanceManager&, bool optimize );
+		void finish( AppearanceManager&, const ParserParams& );
 
 	protected:
 		CityObjectsType _type;
@@ -610,7 +626,7 @@ namespace citygml
 
 		inline void addCityObjectAsRoot( CityObject* o ) { if ( o ) _roots.push_back( o ); }
 
-		void finish( bool optimize );
+		void finish( const ParserParams& );
 
 	protected:
 		Envelope _envelope;

@@ -187,6 +187,8 @@ void CityGMLHandler::initNodes( void )
 	INSERTNODETYPE( textureCoordinates );
 	INSERTNODETYPE( textureType );
 	INSERTNODETYPE( repeat );
+	INSERTNODETYPE( wrapMode );
+	INSERTNODETYPE( borderColor );
 
 	INSERTNODETYPE( X3DMaterial );
 	INSERTNODETYPE( Material );
@@ -432,18 +434,18 @@ void CityGMLHandler::startElement( const std::string& name, void* attributes )
 		}
 		break;
 
-	//case NODETYPE( textureCoordinates ):
-	//	MODEL_FILTER();
-	//	if ( Texture* texture = dynamic_cast<Texture*>( _currentAppearance ) ) 
-	//	{			
-	//		std::string ring = getAttribute( attributes, "ring", "" );
-	//		if ( ring != "" )
-	//		{
-	//			if ( ring.length() > 0 && ring[0] == '#' ) ring = ring.substr( 1 );
-	//			_model->_appearanceManager.assignNode( ring );
-	//		}
-	//	}
-	//	break;
+	case NODETYPE( textureCoordinates ):
+		MODEL_FILTER();
+		if ( Texture* texture = dynamic_cast<Texture*>( _currentAppearance ) ) 
+		{			
+			std::string ring = getAttribute( attributes, "ring" );
+			if ( ring != "" )
+			{
+				if ( ring.length() > 0 && ring[0] == '#' ) ring = ring.substr( 1 );
+				_model->_appearanceManager.assignNode( ring );
+			}
+		}
+		break;
 
 	case NODETYPE( SimpleTexture ):
 	case NODETYPE( ParameterizedTexture ):
@@ -500,7 +502,7 @@ void CityGMLHandler::endElement( const std::string& name )
 	{
 	case NODETYPE( CityModel ):
 		MODEL_FILTER();
-		_model->finish( _params.optimize );
+		_model->finish( _params );
 		if ( _geoTransform )
 		{
 			std::cout << "The coordinates were transformed from " << _model->_srsName << " to "
@@ -564,7 +566,7 @@ void CityGMLHandler::endElement( const std::string& name )
 			{
 				_model->_envelope._lowerBound = _points[0];
 				_model->_envelope._upperBound = _points[1];
-				
+				/*
 				// Translation works only if model as an envelope on CityModel set
 				// It is assumed that the envelope is correct and valid
 				// If there is no envelope set the translation parameters are zero
@@ -591,7 +593,7 @@ void CityGMLHandler::endElement( const std::string& name )
 				// The envelope is already transformed to destination SRS
 				// so we now translation parameters in dest SRS and recompute envelope
 				_model->_envelope._lowerBound = _model->_envelope._lowerBound - _translate;
-				_model->_envelope._upperBound = _model->_envelope._upperBound - _translate;
+				_model->_envelope._upperBound = _model->_envelope._upperBound - _translate;*/
 			}
 			else if ( _currentCityObject )
 			{
@@ -682,7 +684,7 @@ void CityGMLHandler::endElement( const std::string& name )
 	case NODETYPE( Polygon ):
 		if ( _currentGeometry && _currentPolygon )
 		{
-			_currentPolygon->finish( ( nodeType == NODETYPE( Triangle ) ) ? false : _params.tesselate );							
+			//_currentPolygon->finish( ( nodeType == NODETYPE( Triangle ) ) ? false : _params.tesselate );							
 			_currentGeometry->addPolygon( _currentPolygon );
 		}
 		_currentPolygon = 0;
@@ -785,6 +787,28 @@ void CityGMLHandler::endElement( const std::string& name )
 			if ( nodeType == NODETYPE( shininess ) ) mat->_shininess = val;
 			else if ( nodeType == NODETYPE( transparency ) ) mat->_transparency = val;
 			else if ( nodeType == NODETYPE( ambientIntensity ) ) mat->_ambientIntensity = val;
+		}
+		break;
+
+	case NODETYPE( wrapMode ):
+		if ( Texture* texture = dynamic_cast<Texture*>( _currentAppearance ) )             
+		{
+			std::string s( buffer.str() );
+			if ( ci_string_compare( s, "wrap" ) ) texture->_wrapMode = Texture::WM_WRAP;
+			else if ( ci_string_compare( s, "mirror" ) ) texture->_wrapMode = Texture::WM_MIRROR;
+			else if ( ci_string_compare( s, "clamp" ) ) texture->_wrapMode = Texture::WM_CLAMP;
+			else if ( ci_string_compare( s, "border" ) ) texture->_wrapMode = Texture::WM_BORDER;
+		}
+		break;
+
+	case NODETYPE( borderColor ):
+		if ( Texture* texture = dynamic_cast<Texture*>( _currentAppearance ) )  
+		{
+			std::vector<float> col;
+			parseVecList( buffer, col );
+			col.push_back( 1.f ); // if 3 values are given, the fourth (A = opacity) is set to 1.0 by default
+			if ( col.size() >= 4 )
+				memcpy( &texture->_borderColor.r, &col[0], 4 * sizeof(float) );
 		}
 		break;
 

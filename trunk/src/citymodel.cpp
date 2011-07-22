@@ -114,7 +114,7 @@ namespace citygml
 		return n.normal();
 	}
 
-	void LinearRing::finish( void )
+	void LinearRing::finish( TexCoords* texCoords )
 	{
 		// Remove duplicated vertex
 		unsigned int len = _vertices.size();
@@ -122,10 +122,11 @@ namespace citygml
 
 		for ( unsigned int i = 0; i < len; i++ )
 		{
-			if ( ( _vertices[i] - _vertices[ ( i + 1 ) % len ] ).sqrLength() < 0.00000001 )
+			if ( ( _vertices[i] - _vertices[ ( i + 1 ) % len ] ).sqrLength() < 0.00000000000001 )
 			{
 				_vertices.erase( _vertices.begin() + i );
-				finish();
+				if ( texCoords && texCoords->size() > i) texCoords->erase( texCoords->begin() + i );
+				finish( texCoords );
 				return;
 			}
 		}
@@ -138,22 +139,18 @@ namespace citygml
 		for ( unsigned int i = 0; i < _appearances.size(); i++ ) delete _appearances[i];
 
 		std::set<TexCoords*> texCoords;
-		std::map<std::string, TexCoords*>::iterator it = _texCoordsMap.begin();
-	    for ( ; it != _texCoordsMap.end(); ++it )
-        {
-            if(it->second) {
-                if(texCoords.find(it->second) == texCoords.end()) {
-                    texCoords.insert(it->second);
-                    delete it->second;
-                }
-            }
-        }
+		for ( std::map<std::string, TexCoords*>::iterator it = _texCoordsMap.begin(); it != _texCoordsMap.end(); ++it )
+		{
+			if ( it->second && texCoords.find(it->second) == texCoords.end() ) 
+			{
+				texCoords.insert(it->second);
+				delete it->second;
+			}
+		}
 
-        for(std::vector<TexCoords*>::iterator it = _obsoleteTexCoords.begin(); it != _obsoleteTexCoords.end(); it++)
-        {
-            if(texCoords.find(*it) == texCoords.end())
-                delete *it;
-        }
+		for ( std::vector<TexCoords*>::iterator it = _obsoleteTexCoords.begin(); it != _obsoleteTexCoords.end(); it++ )
+			if ( texCoords.find(*it) == texCoords.end() )
+				delete *it;
 	}
 
 	void AppearanceManager::refresh( void )
@@ -176,7 +173,6 @@ namespace citygml
 		
 			if ( _lastCoords ) { assignTexCoords( _lastCoords ); _lastId = ""; }
 		}
-		else _lastId = "";
 	}
 
 	bool AppearanceManager::assignTexCoords( TexCoords* tex ) 
@@ -233,14 +229,26 @@ namespace citygml
 		return _negNormal ? -normal : normal;
 	}
 
-	void Polygon::tesselate( const TVec3d& normal )
+	void Polygon::tesselate( AppearanceManager &appearanceManager, const TVec3d& normal )
 	{
 		_indices.clear();
 
 		if ( !_exteriorRing || _exteriorRing->size() < 3 )
 		{ 
-			mergeRings();
+			mergeRings( appearanceManager );
 			return;
+		}
+
+		TexCoords texCoords;
+		bool t = appearanceManager.getTexCoords( _exteriorRing->getId(), texCoords );
+		_exteriorRing->finish( t ? &texCoords : &_texCoords );
+		if ( t ) std::copy( texCoords.begin(), texCoords.end(), std::back_inserter( _texCoords ) );
+
+		for ( unsigned int i = 0; i < _interiorRings.size(); i++ ) {
+			TexCoords texCoords;
+			bool t = appearanceManager.getTexCoords( _interiorRings[i]->getId(), texCoords );
+			_interiorRings[i]->finish( t ? &texCoords : &_texCoords );
+			if ( t ) std::copy( texCoords.begin(), texCoords.end(), std::back_inserter( _texCoords ) );
 		}
 
 		// Compute the total number of vertices
@@ -251,13 +259,12 @@ namespace citygml
 		Tesselator* tess = Tesselator::getInstance();
 		tess->init( vsize, normal );
 
-		tess->addContour( _exteriorRing->getVertices() );
+		tess->addContour( _exteriorRing->getVertices(), texCoords );
 
 		for ( unsigned int i = 0; i < _interiorRings.size(); i++ )
-			tess->addContour( _interiorRings[i]->getVertices() ); 
+			tess->addContour( _interiorRings[i]->getVertices(), texCoords ); 
 
 		tess->compute();
-
 		_vertices.reserve( tess->getVertices().size() );
 		std::copy( tess->getVertices().begin(), tess->getVertices().end(), std::back_inserter( _vertices ) );
 
@@ -265,20 +272,28 @@ namespace citygml
 		if ( indicesSize > 0 ) 
 		{
 			_indices.resize( indicesSize );
-			memcpy (&_indices[0], &tess->getIndices()[0], indicesSize * sizeof(unsigned int) );
+			memcpy( &_indices[0], &tess->getIndices()[0], indicesSize * sizeof(unsigned int) );
 		}
-
 		clearRings();
 	}
 
-	void Polygon::mergeRings( void )
+	void Polygon::mergeRings( AppearanceManager &appearanceManager )
 	{
 		_vertices.reserve( _vertices.size() + _exteriorRing->size() );
+		TexCoords texCoords;
+		bool t = appearanceManager.getTexCoords( _exteriorRing->getId(), texCoords );
+		_exteriorRing->finish( t ? &texCoords : &_texCoords ); 
+		if ( t ) std::copy( texCoords.begin(), texCoords.end(), std::back_inserter( _texCoords ) );
 
 		std::copy( _exteriorRing->getVertices().begin(), _exteriorRing->getVertices().end(), std::back_inserter( _vertices ) );
 
 		for ( unsigned int i = 0; i < _interiorRings.size(); i++ )
 		{
+			TexCoords texCoords;
+			bool t = appearanceManager.getTexCoords( _interiorRings[i]->getId(), texCoords );
+			_interiorRings[i]->finish( t ? &texCoords : &_texCoords );
+			if ( t ) std::copy( texCoords.begin(), texCoords.end(), std::back_inserter( _texCoords ) );
+
 			_vertices.reserve( _vertices.size() + _interiorRings[i]->size() );
 
 			std::copy( _interiorRings[i]->getVertices().begin(), _interiorRings[i]->getVertices().end(), std::back_inserter( _vertices ) );
@@ -358,10 +373,10 @@ namespace citygml
 		return true;
 	}
 
-	void Polygon::finish( bool doTesselate ) 
+	void Polygon::finish( AppearanceManager& appearanceManager, bool doTesselate ) 
 	{
 		TVec3d normal = computeNormal();
-		if ( doTesselate ) tesselate( normal );	else mergeRings();
+		if ( doTesselate ) tesselate( appearanceManager, normal );	else mergeRings( appearanceManager );
 
 		// Create the normal per point field
 		_normals.resize( _vertices.size() );
@@ -369,11 +384,13 @@ namespace citygml
 			_normals[i] = TVec3f( (float)normal.x, (float)normal.y, (float)normal.z );
 	}
 
-	void Polygon::finish( AppearanceManager& appearanceManager, Appearance* defAppearance )
-	{
-		if ( !appearanceManager.getTexCoords( getId(), _texCoords ) )
+	void Polygon::finish( AppearanceManager& appearanceManager, Appearance* defAppearance, bool doTesselate )
+	{	
+		if ( !appearanceManager.getTexCoords( getId(), _texCoords ) ) 
 			appearanceManager.getTexCoords( _geometry->getId(), _texCoords );
-
+				
+		finish( appearanceManager, doTesselate );
+		
 		_texCoords.resize( _vertices.size() );
 		
 		_appearance = appearanceManager.getAppearance( getId() );
@@ -383,7 +400,6 @@ namespace citygml
 
 	void Polygon::addRing( LinearRing* ring ) 
 	{
-		ring->finish();
 		if ( ring->isExterior() ) _exteriorRing = ring;
 		else _interiorRings.push_back( ring );
 	}
@@ -402,14 +418,14 @@ namespace citygml
 		_polygons.push_back( p ); 
 	}
 
-	void Geometry::finish( AppearanceManager& appearanceManager, Appearance* defAppearance, bool optimize )
+	void Geometry::finish( AppearanceManager& appearanceManager, Appearance* defAppearance,  const ParserParams& params )
 	{
 		Appearance* myappearance = appearanceManager.getAppearance( getId() );
 		std::vector< Polygon* >::const_iterator it = _polygons.begin();
-		for ( ; it != _polygons.end(); ++it ) (*it)->finish( appearanceManager, myappearance ? myappearance : defAppearance );
+		for ( ; it != _polygons.end(); ++it ) (*it)->finish( appearanceManager, myappearance ? myappearance : defAppearance, params.tesselate );
 
 		bool finish = false;
-		while ( !finish && optimize ) 
+		while ( !finish && params.optimize ) 
 		{			
 			finish = true;
 			int len = (int)_polygons.size();			
@@ -521,14 +537,14 @@ namespace citygml
 		return mask;
 	}
 
-	void CityObject::finish( AppearanceManager& appearanceManager, bool optimize ) 
+	void CityObject::finish( AppearanceManager& appearanceManager, const ParserParams& params ) 
 	{
 		Appearance* myappearance = appearanceManager.getAppearance( getId() );
 		std::vector< Geometry* >::const_iterator it = _geometries.begin();
-		for ( ; it != _geometries.end(); ++it ) (*it)->finish( appearanceManager, myappearance ? myappearance : 0, optimize );
+		for ( ; it != _geometries.end(); ++it ) (*it)->finish( appearanceManager, myappearance ? myappearance : 0, params );
 
 		bool finish = false;
-		while ( !finish && optimize ) 
+		while ( !finish && params.optimize ) 
 		{
 			finish = true;
 			int len = _geometries.size();
@@ -568,13 +584,13 @@ namespace citygml
 			it->second.push_back( o );
 	}
 
-	void CityModel::finish( bool optimize ) 
+	void CityModel::finish( const ParserParams& params ) 
 	{
 		// Assign appearances to cityobjects => geometries => polygons
 		CityObjectsMap::const_iterator it = _cityObjectsMap.begin();
 		for ( ; it != _cityObjectsMap.end(); ++it ) 
 			for ( unsigned int i = 0; i < it->second.size(); i++ )
-				it->second[i]->finish( _appearanceManager, optimize );
+				it->second[i]->finish( _appearanceManager, params );
 
 		_appearanceManager.finish();
 		

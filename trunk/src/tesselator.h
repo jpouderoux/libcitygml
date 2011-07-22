@@ -44,13 +44,14 @@ public:
 	void init( unsigned int verticesCount, const TVec3d& normal, GLenum winding_rule = GLU_TESS_WINDING_ODD );
 
 	// Add a new contour - add the exterior ring first, then interiors 
-	void addContour( const std::vector<TVec3d>& );
+	void addContour( const std::vector<TVec3d>&, const std::vector<TVec2f>& );
 
 	// Let's tesselate!
 	void compute( void );
 
 	// Tesselation result access
 	inline const std::vector<TVec3d>& getVertices( void ) const { return _vertices; }
+	inline const std::vector<TVec2f>& getTexCoords( void ) const { return _texCoords; }
 	inline const std::vector<unsigned int>& getIndices( void ) const { return _indices; }
 
 private:
@@ -70,6 +71,7 @@ private:
 	GLenum  _curMode;
 
 	std::vector<TVec3d> _vertices;		
+	std::vector<TVec2f> _texCoords;
 	std::vector<unsigned int> _indices;
 
 	std::vector<unsigned int> _curIndices;
