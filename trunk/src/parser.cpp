@@ -33,7 +33,7 @@ std::map<std::string, CityGMLNodeType> CityGMLHandler::s_cityGMLNodeTypeMap;
 std::vector< std::string > CityGMLHandler::s_knownNamespace;
 
 CityGMLHandler::CityGMLHandler( const ParserParams& params ) 
-: _params( params ), _model( 0 ), _currentCityObject( 0 ), 
+: _params( params ), _model( 0 ), _currentCityObject( 0 ), _currentObject( 0 ),
 _currentGeometry( 0 ), _currentPolygon( 0 ), _currentRing( 0 ),  _currentGeometryType( GT_Unknown ),
 _currentAppearance( 0 ), _currentLOD( params.minLOD ), 
 _filterNodeType( false ), _filterDepth( 0 ), _exterior( true ), _geoTransform( 0 )
@@ -329,13 +329,14 @@ void CityGMLHandler::startElement( const std::string& name, void* attributes )
 	{
 	case NODETYPE( CityModel ):
 		_model = new CityModel();
+		pushObject( _model );
 		break;
 
 		// City objects management
 #define MANAGE_OBJECT( _t_ )\
 	case CG_ ## _t_ :\
 	if ( _objectsMask & COT_ ## _t_ )\
-		{ pushCityObject( new _t_( getGmlIdAttribute( attributes ) ) ); /*std::cout << "new "<< #_t_ " - " << _currentCityObject->getId() << std::endl;*/ }\
+		{ pushCityObject( new _t_( getGmlIdAttribute( attributes ) ) ); pushObject( _currentCityObject ); /*std::cout << "new "<< #_t_ " - " << _currentCityObject->getId() << std::endl;*/ }\
 	else { pushCityObject( 0 ); _filterNodeType = true; _filterDepth = getPathDepth(); }\
 	break;
 
@@ -365,10 +366,13 @@ void CityGMLHandler::startElement( const std::string& name, void* attributes )
 #undef MANAGE_OBJECT
 
 		// BoundarySurfaceType
-#define MANAGE_SURFACETYPE( _t_ ) case CG_ ## _t_ ## Surface : _currentGeometryType = GT_ ## _t_; break;
+#define MANAGE_SURFACETYPE( _t_ ) case CG_ ## _t_ ## Surface : _currentGeometryType = GT_ ## _t_;\
+									if ( _objectsMask & COT_ ## _t_ ## Surface )\
+		{ pushCityObject( new _t_ ## Surface( getGmlIdAttribute( attributes ) ) ); pushObject( _currentCityObject ); /*std::cout << "new "<< #_t_ " - " << _currentCityObject->getId() << std::endl;*/ }\
+	else { pushCityObject( 0 ); _filterNodeType = true; _filterDepth = getPathDepth(); }\
+	break;
 		MANAGE_SURFACETYPE( Wall );
 		MANAGE_SURFACETYPE( Roof );
-
 		MANAGE_SURFACETYPE( Ground );
 		MANAGE_SURFACETYPE( Closure );
 		MANAGE_SURFACETYPE( Floor );
@@ -390,12 +394,14 @@ void CityGMLHandler::startElement( const std::string& name, void* attributes )
 		_orientation = '+';
 		_currentGeometry = new Geometry( getGmlIdAttribute( attributes ), _currentGeometryType, _currentLOD );
         _geometries.insert( _currentGeometry );
+		pushObject( _currentGeometry );
 		break;
 
 	case NODETYPE( Triangle ):
 	case NODETYPE( Polygon ):
 		LOD_FILTER();
 		_currentPolygon = new Polygon( getGmlIdAttribute( attributes ) );
+		pushObject( _currentPolygon );
 		break;
 
 	case NODETYPE( Envelope ): 
@@ -417,6 +423,7 @@ void CityGMLHandler::startElement( const std::string& name, void* attributes )
 	case NODETYPE( LinearRing ): 
 		LOD_FILTER();
 		_currentRing = new LinearRing( getGmlIdAttribute( attributes ), _exterior ); 
+		pushObject( _currentRing );
 		break;
 
 		// Material management
@@ -453,6 +460,7 @@ void CityGMLHandler::startElement( const std::string& name, void* attributes )
 		_currentAppearance = new Texture( getGmlIdAttribute( attributes ) );
 		_model->_appearanceManager.addAppearance( _currentAppearance );
 		_appearanceAssigned = false;
+		pushObject( _currentAppearance );
 		break;
 
 	case NODETYPE( Material ):
@@ -460,6 +468,7 @@ void CityGMLHandler::startElement( const std::string& name, void* attributes )
 		_currentAppearance = new Material( getGmlIdAttribute( attributes ) );
 		_model->_appearanceManager.addAppearance( _currentAppearance );
 		_appearanceAssigned = false;
+		pushObject( _currentAppearance );
 		break;
 
 	case NODETYPE( stringAttribute ):
@@ -520,6 +529,7 @@ void CityGMLHandler::endElement( const std::string& name )
 		std::cout << std::fixed << "The model coordinates were translated by x:" << _translate.x
 				      << " y:" << _translate.y << " z:" << _translate.z << std::endl;
 		
+		popObject();
 		break;
 
 		// City objects management
@@ -547,6 +557,13 @@ void CityGMLHandler::endElement( const std::string& name )
 	case NODETYPE( BridgeConstructionElement ):
 	case NODETYPE( BridgeInstallation ):
 	case NODETYPE( BridgePart ):
+	case NODETYPE( WallSurface ):
+	case NODETYPE( RoofSurface ):
+	case NODETYPE( GroundSurface ):
+	case NODETYPE( ClosureSurface ):
+	case NODETYPE( FloorSurface ):
+	case NODETYPE( InteriorWallSurface ):
+	case NODETYPE( CeilingSurface ):
 		MODEL_FILTER();
 		if ( _currentCityObject && ( _currentCityObject->size() > 0 || _currentCityObject->getChildCount() > 0 || !_params.pruneEmptyObjects ) ) 
 		{	// Prune empty objects 
@@ -555,7 +572,9 @@ void CityGMLHandler::endElement( const std::string& name )
 		}
 		else delete _currentCityObject; 
 		popCityObject();
+		popObject();
 		_filterNodeType = false;
+		_currentGeometryType = GT_Unknown;
 		break;
 
 	case NODETYPE( Envelope ): 
@@ -645,28 +664,18 @@ void CityGMLHandler::endElement( const std::string& name )
 	case NODETYPE( measuredHeight ):
 	case NODETYPE( creationDate ):
 	case NODETYPE( terminationDate ):
-		if ( _currentCityObject ) _currentCityObject->setAttribute( localname, buffer.str(), false );
+		if ( _currentObject ) _currentObject->setAttribute( localname, buffer.str(), false );
 		break;
 
 	case NODETYPE( value ):
-		if ( _attributeName != "" && _currentCityObject )
+		if ( _attributeName != "" && _currentObject )
 		{
-			if ( _currentCityObject ) _currentCityObject->setAttribute( _attributeName, buffer.str(), false );
+			if ( _currentObject ) _currentObject->setAttribute( _attributeName, buffer.str(), false );
 			else if ( _model && getPathDepth() == 1 ) _model->setAttribute( _attributeName, buffer.str(), false );
 		}
 		break;
 
 		// Geometry management 
-
-	case NODETYPE( WallSurface ):
-	case NODETYPE( RoofSurface ):
-	case NODETYPE( GroundSurface ):
-	case NODETYPE( ClosureSurface ):
-	case NODETYPE( FloorSurface ):
-	case NODETYPE( InteriorWallSurface ):
-	case NODETYPE( CeilingSurface ):
-		_currentGeometryType = GT_Unknown;
-		break;
 
 	case NODETYPE( surfaceMember ):
 	case NODETYPE( TriangulatedSurface ):
@@ -678,6 +687,7 @@ void CityGMLHandler::endElement( const std::string& name )
 		else 
 			delete _currentGeometry;
 		_currentGeometry = 0;
+		popObject();
 		break;
 
 	case NODETYPE( Triangle ):
@@ -688,6 +698,7 @@ void CityGMLHandler::endElement( const std::string& name )
 			_currentGeometry->addPolygon( _currentPolygon );
 		}
 		_currentPolygon = 0;
+		popObject();
 		break;
 
 	case NODETYPE( pos ):
@@ -762,6 +773,7 @@ void CityGMLHandler::endElement( const std::string& name )
 			_model->_appearanceManager.assignNode( _currentGeometry->getId() );
 		_model->_appearanceManager.refresh();
 		_currentAppearance = 0;
+		popObject();
 		break;
 
 	case NODETYPE( diffuseColor ):

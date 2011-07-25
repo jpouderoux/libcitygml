@@ -70,7 +70,16 @@ namespace citygml
 		COT_BridgeInstallation			= 1 << 20, 
 		COT_BridgePart                  = 1 << 21,
 		COT_BuildingPart                = 1 << 22,
-		COT_All                         = 0xFFFFFF
+
+		COT_WallSurface                 = 1 << 23,
+		COT_RoofSurface                 = 1 << 24,
+		COT_GroundSurface               = 1 << 25,
+		COT_ClosureSurface              = 1 << 26,
+		COT_FloorSurface                = 1 << 27,
+		COT_InteriorWallSurface         = 1 << 28,
+		COT_CeilingSurface              = 1 << 29,
+
+		COT_All                         = 0xFFFFFFFF
 	};
 
 	typedef unsigned int CityObjectsTypeMask;
@@ -555,6 +564,21 @@ namespace citygml
 	DECLARE_SIMPLE_OBJECT_CLASS( BridgePart, MAKE_RGB( 245, 50, 50 ) );
 
 	DECLARE_SIMPLE_OBJECT_CLASS( GenericCityObject, MAKE_RGB( 100, 130, 0 ) );
+
+	DECLARE_SIMPLE_OBJECT_CLASS( WallSurface, MAKE_RGB( 186, 184, 135 ) );
+
+	DECLARE_SIMPLE_OBJECT_CLASS( RoofSurface, MAKE_RGB( 186, 184, 135 ) );
+
+	DECLARE_SIMPLE_OBJECT_CLASS( GroundSurface, MAKE_RGB( 186, 184, 135 ) );
+
+	DECLARE_SIMPLE_OBJECT_CLASS( ClosureSurface, MAKE_RGB( 186, 184, 135 ) );
+
+	DECLARE_SIMPLE_OBJECT_CLASS( FloorSurface, MAKE_RGB( 186, 184, 135 ) );
+
+	DECLARE_SIMPLE_OBJECT_CLASS( InteriorWallSurface, MAKE_RGB( 186, 184, 135 ) );
+
+	DECLARE_SIMPLE_OBJECT_CLASS( CeilingSurface, MAKE_RGB( 186, 184, 135 ) );
+
 
 	class LandUse : public CityObject 
 	{
