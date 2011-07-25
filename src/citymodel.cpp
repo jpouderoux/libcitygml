@@ -531,6 +531,14 @@ namespace citygml
 			COMPARECITYNAMEMASK( BridgeInstallation );
 			COMPARECITYNAMEMASK( BridgePart );
 			COMPARECITYNAMEMASK( GenericCityObject );
+
+			COMPARECITYNAMEMASK( WallSurface );
+			COMPARECITYNAMEMASK( RoofSurface );         
+			COMPARECITYNAMEMASK( GroundSurface );        
+			COMPARECITYNAMEMASK( ClosureSurface );      
+			COMPARECITYNAMEMASK( FloorSurface );        
+			COMPARECITYNAMEMASK( InteriorWallSurface );
+			COMPARECITYNAMEMASK( CeilingSurface );
 			COMPARECITYNAMEMASK( All );					
 		}
 #undef COMPARECITYNAMEMASK

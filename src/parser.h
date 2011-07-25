@@ -253,6 +253,20 @@ namespace citygml
 			_cityObjectStack.pop();
 		}
 
+		inline void pushObject( Object* object )
+		{
+			_objectStack.push( object );
+			_currentObject = object;
+		}
+
+		inline void popObject( void )
+		{
+			_currentObject = 0; 
+			if ( _objectStack.empty() ) return; 
+			_objectStack.pop();
+			_currentObject = _objectStack.top();			
+		}
+
 		virtual std::string getAttribute( void* attributes, const std::string& attname, const std::string& defvalue = "" ) = 0;
 
 		inline std::string getGmlIdAttribute( void* attributes ) { return getAttribute( attributes, "gml:id", "" ); }
@@ -282,6 +296,9 @@ namespace citygml
 
 		CityObject* _currentCityObject;
 		std::stack<CityObject*> _cityObjectStack;
+
+		Object* _currentObject;
+		std::stack<Object*> _objectStack;
 
 		Geometry* _currentGeometry;
         std::set<Geometry*> _geometries;
