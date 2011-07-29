@@ -42,6 +42,8 @@
 #	define LIBCITYGML_EXPORT
 #endif
 
+class Tesselator;
+
 namespace citygml 
 {
 	class CityModel;
@@ -267,7 +269,7 @@ namespace citygml
 		friend class CityGMLHandler;
 		friend class CityModel;
 	public:
-		AppearanceManager( void ) : _lastId( "" ), _lastCoords( 0 ) {}
+		AppearanceManager( void );
 
 		~AppearanceManager( void );
 
@@ -285,6 +287,8 @@ namespace citygml
 			texCoords = *it->second;
 			return true;
 		}
+
+		inline Tesselator* getTesselator( void ) { return _tesselator; }
 
 	protected:
 		void refresh( void );
@@ -305,6 +309,8 @@ namespace citygml
 
 		std::map<std::string, TexCoords*> _texCoordsMap;
         std::vector<TexCoords*> _obsoleteTexCoords;
+
+		Tesselator* _tesselator;
 	};
 
 	///////////////////////////////////////////////////////////////////////////////
@@ -660,7 +666,7 @@ namespace citygml
 		CityObjectsMap _cityObjectsMap;
 
 		AppearanceManager _appearanceManager;
-
+		
 		std::string _srsName;
 		
 		TVec3d _translation;
