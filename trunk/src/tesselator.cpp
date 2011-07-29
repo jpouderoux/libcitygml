@@ -22,8 +22,6 @@
 #	include <stdint.h>
 #endif
 
-Tesselator* Tesselator::_instance = 0;
-
 Tesselator::Tesselator( void )
 {
 	_tobj = gluNewTess(); 

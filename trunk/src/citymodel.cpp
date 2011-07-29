@@ -134,6 +134,11 @@ namespace citygml
 
 	///////////////////////////////////////////////////////////////////////////////
 
+	AppearanceManager::AppearanceManager( void ) : _lastId( "" ), _lastCoords( 0 ) 
+	{
+		_tesselator = new ::Tesselator();
+	}
+
 	AppearanceManager::~AppearanceManager( void ) 
 	{
 		for ( unsigned int i = 0; i < _appearances.size(); i++ ) delete _appearances[i];
@@ -151,6 +156,8 @@ namespace citygml
 		for ( std::vector<TexCoords*>::iterator it = _obsoleteTexCoords.begin(); it != _obsoleteTexCoords.end(); it++ )
 			if ( texCoords.find(*it) == texCoords.end() )
 				delete *it;
+
+		delete _tesselator;
 	}
 
 	void AppearanceManager::refresh( void )
@@ -256,7 +263,7 @@ namespace citygml
 		for ( unsigned int i = 0; i < _interiorRings.size(); i++ )
 			vsize += _interiorRings[i]->size();
 
-		Tesselator* tess = Tesselator::getInstance();
+		Tesselator* tess = appearanceManager.getTesselator();
 		tess->init( vsize, normal );
 
 		tess->addContour( _exteriorRing->getVertices(), texCoords );
@@ -601,7 +608,5 @@ namespace citygml
 				it->second[i]->finish( _appearanceManager, params );
 
 		_appearanceManager.finish();
-		
-		Tesselator::destroy();
 	}
 }

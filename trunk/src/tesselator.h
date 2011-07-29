@@ -37,9 +37,8 @@
 class Tesselator 
 {		
 public:
-	static Tesselator* getInstance( void ) { if ( !_instance ) _instance = new Tesselator(); return _instance; }
-
-	static void destroy( void ) { delete _instance; _instance = 0; }
+	Tesselator( void ); 
+	~Tesselator( void );
 
 	void init( unsigned int verticesCount, const TVec3d& normal, GLenum winding_rule = GLU_TESS_WINDING_ODD );
 
@@ -55,9 +54,6 @@ public:
 	inline const std::vector<unsigned int>& getIndices( void ) const { return _indices; }
 
 private:
-	Tesselator( void );
-	~Tesselator( void );
-
 	typedef void (APIENTRY *GLU_TESS_CALLBACK)();
 	static void CALLBACK beginCallback( GLenum, void* );
 	static void CALLBACK vertexCallback( GLvoid*, void* );
@@ -66,7 +62,6 @@ private:
 	static void CALLBACK errorCallback( GLenum, void* );	
 
 private:
-	static Tesselator* _instance; // singleton
 	GLUtesselator *_tobj;
 	GLenum  _curMode;
 
