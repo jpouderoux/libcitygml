@@ -436,8 +436,8 @@ void CityGMLHandler::startElement( const std::string& name, void* attributes )
 			{
 				if ( uri.length() > 0 && uri[0] == '#' ) uri = uri.substr( 1 );		
 				_model->_appearanceManager.assignNode( uri );
+				_appearanceAssigned = true;
 			}
-			_appearanceAssigned = true;
 		}
 		break;
 
