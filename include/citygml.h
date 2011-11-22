@@ -206,7 +206,8 @@ namespace citygml
 	class Texture : virtual public Appearance
 	{
 		friend class CityGMLHandler;
-
+		
+	public:
 		typedef enum WrapMode 
 		{
 			WM_NONE = 0,	// the resulting color is fully transparent
@@ -216,7 +217,6 @@ namespace citygml
 			WM_BORDER		// the resulting color is specified by the borderColor element (RGBA)
 		} WrapMode;
 
-	public:
 		Texture( const std::string& id ) : Appearance( id, "Texture" ), _repeat( false ), _wrapMode( WM_NONE ) {}
 
 		inline std::string getUrl( void ) const { return _url; }
