@@ -175,6 +175,7 @@ namespace citygml
 		NODETYPE( repeat ),
 		NODETYPE( wrapMode ),
 		NODETYPE( borderColor ),
+		NODETYPE( preferWorldFile ),
 
 		NODETYPE( X3DMaterial ),
 		NODETYPE( Material ),

@@ -236,6 +236,21 @@ namespace citygml
 		TVec4f _borderColor;
 	};
 
+	class GeoreferencedTexture : public Texture
+	{
+		friend class CityGMLHandler;
+
+	public:
+		GeoreferencedTexture( const std::string& id ) : Appearance( id, "GeoreferencedTexture" ), Texture( id ), _preferWorldFile(true) {}
+
+		inline bool getPreferWorldFile( void ) const { return _preferWorldFile; }
+
+		// TODO support referencePoint and orientation
+
+	protected:
+		bool _preferWorldFile;
+	};
+
 	///////////////////////////////////////////////////////////////////////////////
 
 	class Material : virtual public Appearance

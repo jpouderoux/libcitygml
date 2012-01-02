@@ -189,6 +189,7 @@ void CityGMLHandler::initNodes( void )
 	INSERTNODETYPE( repeat );
 	INSERTNODETYPE( wrapMode );
 	INSERTNODETYPE( borderColor );
+	INSERTNODETYPE( preferWorldFile );
 
 	INSERTNODETYPE( X3DMaterial );
 	INSERTNODETYPE( Material );
@@ -239,6 +240,18 @@ CityGMLNodeType CityGMLHandler::getNodeTypeFromName( const std::string& name )
 template<class T> inline void parseValue( std::stringstream &s, T &v ) 
 {
 	if ( !s.eof() ) s >> v;
+}
+
+template<> inline void parseValue( std::stringstream &s, bool &v ) 
+{
+	// parsing a bool is special because "true" and "1" are true while "false" and "0" are false
+	std::string value = s.str();
+	if (value == "1" || value == "true")
+		v = true;
+	else if (value == "0" || value == "false")
+		v = false;
+	else
+		std::cerr << "Error ! Boolean expected, got " << value << std::endl;
 }
 
 template<class T> inline void parseValue( std::stringstream &s, T &v, GeoTransform* transform, const TVec3d &translate ) 
@@ -456,8 +469,14 @@ void CityGMLHandler::startElement( const std::string& name, void* attributes )
 
 	case NODETYPE( SimpleTexture ):
 	case NODETYPE( ParameterizedTexture ):
-	case NODETYPE( GeoreferencedTexture ):
 		_currentAppearance = new Texture( getGmlIdAttribute( attributes ) );
+		_model->_appearanceManager.addAppearance( _currentAppearance );
+		_appearanceAssigned = false;
+		pushObject( _currentAppearance );
+		break;
+
+	case NODETYPE( GeoreferencedTexture ):
+		_currentAppearance = new GeoreferencedTexture( getGmlIdAttribute( attributes ) );
 		_model->_appearanceManager.addAppearance( _currentAppearance );
 		_appearanceAssigned = false;
 		pushObject( _currentAppearance );
@@ -824,6 +843,12 @@ void CityGMLHandler::endElement( const std::string& name )
 		}
 		break;
 
+	case NODETYPE( preferWorldFile ):
+		if ( GeoreferencedTexture* geoRefTexture = dynamic_cast<GeoreferencedTexture*>( _currentAppearance ) )  
+		{
+			parseValue( buffer, geoRefTexture->_preferWorldFile );
+		}
+		break;
 	default:
 		break;
 	};
