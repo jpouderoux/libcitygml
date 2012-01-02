@@ -176,7 +176,6 @@ osgDB::ReaderWriter::ReadResult ReaderWriterCityGML::readCity( const citygml::Ci
 	const TVec3d& t = city->getTranslationParameters();
 	
 	osg::MatrixTransform *root = new osg::MatrixTransform();
-	root->setMatrix(osg::Matrixd::translate(t.x, t.y, t.z));
 
 	root->setName( city->getId() );
 
@@ -205,6 +204,9 @@ osgDB::ReaderWriter::ReadResult ReaderWriterCityGML::readCity( const citygml::Ci
 
 	for ( unsigned int i = 0; i < roots.size(); ++i ) createCityObject( roots[i], settings, root );
 #endif
+	
+	root->setMatrix(osg::Matrixd::translate(t.x + settings._origin.x(), t.y + settings._origin.y(), t.z + settings._origin.z()));
+
 	osg::notify(osg::NOTICE) << "Done." << std::endl;
 
 	return root;
