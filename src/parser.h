@@ -265,7 +265,7 @@ namespace citygml
 			_currentObject = 0; 
 			if ( _objectStack.empty() ) return; 
 			_objectStack.pop();
-			_currentObject = _objectStack.top();			
+			_currentObject = _objectStack.empty() ? 0 : _objectStack.top();			
 		}
 
 		virtual std::string getAttribute( void* attributes, const std::string& attname, const std::string& defvalue = "" ) = 0;
