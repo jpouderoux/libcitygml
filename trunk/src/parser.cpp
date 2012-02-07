@@ -699,12 +699,10 @@ void CityGMLHandler::endElement( const std::string& name )
 	case NODETYPE( surfaceMember ):
 	case NODETYPE( TriangulatedSurface ):
 		if ( _currentCityObject && _currentGeometry )
-        {
-			_currentCityObject->_geometries.push_back( _currentGeometry );
-            _geometries.erase( _currentGeometry );
-        }
+        	_currentCityObject->_geometries.push_back( _currentGeometry );          
 		else 
 			delete _currentGeometry;
+		_geometries.erase( _currentGeometry );
 		_currentGeometry = 0;
 		popObject();
 		break;
