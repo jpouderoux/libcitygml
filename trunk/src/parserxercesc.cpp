@@ -70,6 +70,7 @@ public:
 protected:
 	std::string getAttribute( void* attributes, const std::string& attname, const std::string& defvalue = "" )
 	{
+		if (!attributes) return defvalue;
 		xercesc::AttributeList* attrs = (xercesc::AttributeList*)attributes;
 		const XMLCh* att = attrs->getValue( attname.c_str() );
 		return att ? wstos( att ) : defvalue;
