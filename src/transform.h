@@ -57,6 +57,16 @@ public:
 #endif
 	}
 
+#ifdef USE_GDAL
+	inline void transform( TVec2d &p ) const
+	{
+		if ( _trans ) ((OGRCoordinateTransformation*)_trans)->Transform( 1, &p.x, &p.y );
+#else
+	inline void transform( TVec2d & ) const
+	{
+#endif
+	}
+
 	inline const std::string& getSourceURN( void ) const { return _sourceURN; }
 
 	inline const std::string& getDestURN( void ) const { return _destURN; }
