@@ -4,6 +4,7 @@
 // Copyright(c) 2010 Joachim Pouderoux, BRGM
 //////////////////////////////////////////////////////////////////////////
 
+#include <osg/Array>
 #include <osg/Node>
 #include <osg/MatrixTransform>
 #include <osg/Geode>
@@ -32,6 +33,7 @@
 #include <algorithm>
 #include <cctype> 
 
+
 class ReaderWriterCityGML : public osgDB::ReaderWriter
 {
 public:
@@ -46,6 +48,7 @@ public:
 		supportsOption( "optimize", "Optimize the geometries & polygons of the CityGML model to reduce the number of instanced objects" );
 		supportsOption( "pruneEmptyObjects", "Prune empty objects (ie. without -supported- geometry)" );
 		supportsOption( "destSRS", "Transform geometry to given reference system" );
+        supportsOption( "useMaxLODonly", "Use the highest available LOD for geometry of one object" );
 	}
 
 	virtual const char* className( void ) const { return "CityGML Reader"; }
@@ -58,7 +61,8 @@ private:
 	{
 	public:
 		Settings( void ) : _printNames( false ),
-			_first(true), _origin( 0.f, 0.f, 0.f ) {}
+			_first(true), _origin( 0.f, 0.f, 0.f ),
+             _useMaxLODOnly(false){}
 
 		void parseOptions( const osgDB::ReaderWriter::Options* options)
 		{
@@ -74,6 +78,7 @@ private:
 				else if ( currentOption == "maxlod" ) iss >> _params.maxLOD;
 				else if ( currentOption == "optimize" ) _params.optimize = true;
 				else if ( currentOption == "pruneemptyobjects" ) _params.pruneEmptyObjects = true;		
+                else if ( currentOption == "usemaxlodonly" ) _useMaxLODOnly = true;		
 			}
 		}
 
@@ -81,13 +86,17 @@ private:
 		citygml::ParserParams _params;
 		bool _printNames;
 		bool _first;
+        bool _useMaxLODOnly;
 		osg::Vec3 _origin;
 		std::map< std::string, osg::Texture2D* > _textureMap;
 	};
 
+    static unsigned int getHighestLodForObject( const citygml::CityObject * object);
+
 private:
 	ReadResult readCity( const citygml::CityModel *, Settings& ) const;
-	bool createCityObject( const citygml::CityObject*, Settings&, osg::Group* ) const;
+	bool createCityObject( const citygml::CityObject*, Settings&, osg::Group*, unsigned int minimumLODToConsider = 0 ) const;
+    
 };
 
 // Register with Registry to instantiate the above reader/writer.
@@ -195,8 +204,9 @@ osgDB::ReaderWriter::ReadResult ReaderWriterCityGML::readCity( const citygml::Ci
 		grp->setName( citygml::getCityObjectsClassName( it->first ) );
 		root->addChild( grp );
 
-		for ( unsigned int i = 0; i < v.size(); ++i )
-			createCityObject( v[i], settings, grp ) );	
+		for ( unsigned int i = 0; i < v.size(); ++i ){
+			createCityObject( v[i], settings, grp);	
+        }
 	}
 #else
 
@@ -212,7 +222,7 @@ osgDB::ReaderWriter::ReadResult ReaderWriterCityGML::readCity( const citygml::Ci
 	return root;
 }
 
-bool ReaderWriterCityGML::createCityObject( const citygml::CityObject* object, Settings& settings, osg::Group* parent ) const
+bool ReaderWriterCityGML::createCityObject( const citygml::CityObject* object, Settings& settings, osg::Group* parent, unsigned int minimumLODToConsider ) const
 {
 	// Skip objects without geometry
 	if ( !object || !parent ) return false;
@@ -226,7 +236,7 @@ bool ReaderWriterCityGML::createCityObject( const citygml::CityObject* object, S
 	grp->addChild( geode );
 	parent->addChild( grp );
 #else
-	parent->addChild( geode )
+	parent->addChild( geode );
 #endif
 
 	// Get the default color for the whole city object
@@ -236,14 +246,22 @@ bool ReaderWriterCityGML::createCityObject( const citygml::CityObject* object, S
 	osg::ref_ptr<osg::Vec4Array> roof_color = new osg::Vec4Array;
 	roof_color->push_back( osg::Vec4( 0.9f, 0.1f, 0.1f, 1.0f ) );
 
+    unsigned int highestLOD = ReaderWriterCityGML::getHighestLodForObject(object);    
+
 	for ( unsigned int i = 0; i < object->size(); i++ ) 
 	{
 		const citygml::Geometry& geometry = *object->getGeometry( i );
 
+        const unsigned int currentLOD = geometry.getLOD();
+
+        if (settings._useMaxLODOnly && (currentLOD < highestLOD || currentLOD < minimumLODToConsider )){
+            continue;
+        }
+
 		for ( unsigned int j = 0; j < geometry.size(); j++ ) 
 		{
 			const citygml::Polygon* p = geometry[j];
-
+            
 			if ( p->getIndices().size() == 0 ) continue;
 
 			// Geometry management
@@ -430,8 +448,31 @@ bool ReaderWriterCityGML::createCityObject( const citygml::CityObject* object, S
 
 #ifdef RECURSIVE_DUMP
 	for ( unsigned int i = 0; i < object->getChildCount(); ++i )
-        createCityObject( object->getChild(i), settings, grp );
+        createCityObject( object->getChild(i), settings, grp, highestLOD);
 #endif
 
 	return true;
+}
+
+unsigned int ReaderWriterCityGML::getHighestLodForObject( const citygml::CityObject * object){
+    unsigned int highestLOD = 0;
+    // first find out highest LOD for this object
+    for (unsigned int i = 0; i < object->size(); i++) {
+        const citygml::Geometry &geometry = *object->getGeometry(i);
+
+        if (geometry.getLOD() > highestLOD){
+            highestLOD = geometry.getLOD();
+        }
+    }
+
+#ifdef RECURSIVE_DUMP
+    //check for the highest LODs of Children
+    for (unsigned int i = 0; i < object->getChildCount(); ++i){
+        unsigned int tempHighestLOD = ReaderWriterCityGML::getHighestLodForObject(object->getChild(i));
+        if (tempHighestLOD > highestLOD){
+            tempHighestLOD = highestLOD;
+        }            
+    }        
+#endif
+    return highestLOD;
 }
