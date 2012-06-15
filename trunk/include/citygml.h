@@ -188,16 +188,18 @@ namespace citygml
 	{
 		friend class CityGMLHandler;
 	public:
-		Appearance( const std::string& id, const std::string& typeString ) : Object( id ), _typeString( typeString ) {}
+		Appearance( const std::string& id, const std::string& typeString ) : Object( id ), _typeString( typeString ), _isFront(true) {}
 
 		virtual ~Appearance( void ) {}
 
 		inline std::string getType( void ) const { return _typeString; }
+		inline bool getIsFront( void ) const { return _isFront; }
 
 		virtual std::string toString( void ) const { return _typeString + " " + _id; }
 
 	protected:
 		std::string _typeString;
+		bool _isFront;
 	};
 
 
@@ -288,6 +290,13 @@ namespace citygml
 
 		~AppearanceManager( void );
 
+		typedef enum ForSide 
+		{
+			FS_ANY = 0,	// appearance for any side
+			FS_FRONT,	// appearance for front side
+			FS_BACK		// appearance for back side
+		};
+
 		inline Appearance* getAppearance( const std::string& nodeid ) const
 		// Deprecated, use getMaterial and getTexture instead.
 		{
@@ -301,6 +310,16 @@ namespace citygml
 		inline Texture* getTexture( const std::string& nodeid ) const
 		{
 			return getAppearance< Texture* >( nodeid );
+		}
+
+		// Getter for the front&back material if there is any.
+		inline Material* getMaterialFront( const std::string& nodeid ) const
+		{
+			return getAppearance< Material* >( nodeid, FS_FRONT );
+		}
+		inline Material* getMaterialBack( const std::string& nodeid ) const
+		{
+			return getAppearance< Material* >( nodeid, FS_BACK );
 		}
 
 		inline bool getTexCoords( const std::string& nodeid, TexCoords &texCoords) const
@@ -317,7 +336,7 @@ namespace citygml
 	protected:
 		void refresh( void );
 
-		template < typename AppType > AppType getAppearance( const std::string& nodeid ) const;
+		template < typename AppType > AppType getAppearance( const std::string& nodeid, ForSide side = FS_ANY ) const;
 		void addAppearance( Appearance* );
 		void assignNode( const std::string& nodeid );
 		bool assignTexCoords( TexCoords* );
@@ -379,7 +398,18 @@ namespace citygml
 		friend class Tesseletor;
 		friend class CityModel;
 	public:
-		Polygon( const std::string& id ) : Object( id ), _appearance( 0 ), _material( 0 ), _texture( 0 ), _exteriorRing( 0 ), _negNormal( false ), _geometry( 0 ) {}
+		enum AppearanceSide {
+			FRONT = 0,
+			BACK,
+			_NUMBER_OF_SIDES
+		};
+
+		Polygon( const std::string& id ) : 
+		  Object( id ), _appearance( 0 ), _texture( 0 ), _exteriorRing( 0 ), _negNormal( false ), _geometry( 0 ) 
+		  {
+			  _materials[ FRONT ] = 0;
+			  _materials[ BACK ] = 0;
+		  }
 
 		LIBCITYGML_EXPORT ~Polygon( void );
 
@@ -397,8 +427,14 @@ namespace citygml
 
 		// Get the appearance
 		inline const Appearance* getAppearance( void ) const { return _appearance; } // Deprecated! Use getMaterial and getTexture instead
-		inline const Material* getMaterial( void ) const { return _material; }
+		inline const Material* getMaterial( void ) const 
+		{ 
+			if ( _materials[ FRONT ] ) { return _materials[ FRONT ]; }
+			else { return _materials[ BACK ]; }
+		}
 		inline const Texture* getTexture( void ) const { return _texture; }
+		inline const Material* getMaterialFront( void ) const { return _materials[ FRONT ]; }
+		inline const Material* getMaterialBack( void ) const { return _materials[ BACK ]; }
 
 	protected:
 		void finish( AppearanceManager&, bool doTesselate );
@@ -420,7 +456,7 @@ namespace citygml
 		std::vector<unsigned int> _indices;
 
 		Appearance* _appearance;
-		Material* _material;
+		Material* _materials[ _NUMBER_OF_SIDES ];
 		Texture* _texture;
 
 		TexCoords _texCoords; 

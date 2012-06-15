@@ -167,14 +167,21 @@ namespace citygml
 	}
 
 	template <typename AppType>
-	AppType AppearanceManager::getAppearance( const std::string& nodeid ) const
+	AppType AppearanceManager::getAppearance( const std::string& nodeid, ForSide side /*= FS_ANY*/ ) const
 	{
 		std::map< std::string, std::vector< Appearance* > >::const_iterator map_iterator = _appearancesMap.find( nodeid );
 		if ( map_iterator == _appearancesMap.end() ) return 0;
 
 		std::vector< Appearance* >::const_iterator vector_iterator = ( map_iterator->second ).begin();
 		for( ; vector_iterator != ( map_iterator->second ).end(); ++vector_iterator ) {
-			if ( AppType appType = dynamic_cast< AppType >( *vector_iterator ) ) return appType;
+			if ( AppType appType = dynamic_cast< AppType >( *vector_iterator ) ) {
+				if ( side == FS_ANY || 
+					( side == FS_FRONT && appType->getIsFront() ) ||
+					( side == FS_BACK && !appType->getIsFront() ) )
+				{
+					return appType;
+				}
+			}
 		}
 
 		return 0;
@@ -192,9 +199,10 @@ namespace citygml
 		if ( !getAppearance< Appearance * >( nodeid ) )
 			_appearancesMap[ nodeid ] = std::vector< Appearance* >(0);
 
-		Appearance* currentAppearance = _appearances[ _appearances.size() - 1 ];	
-		if ( dynamic_cast< Texture* >( currentAppearance ) && !getAppearance< Texture* >( nodeid ) ||
-			 dynamic_cast< Material* >( currentAppearance ) && !getAppearance< Material* >( nodeid ) )
+		Appearance* currentAppearance = _appearances[ _appearances.size() - 1 ];
+		ForSide side = currentAppearance->getIsFront() ? FS_FRONT : FS_BACK;
+		if ( dynamic_cast< Texture* >( currentAppearance ) && !getAppearance< Texture* >( nodeid, side ) ||
+			 dynamic_cast< Material* >( currentAppearance ) && !getAppearance< Material* >( nodeid, side ) )
 		{
 			(_appearancesMap[ nodeid ]).push_back( currentAppearance );
 			if ( _lastCoords ) { assignTexCoords( _lastCoords ); _lastId = ""; }
@@ -423,8 +431,10 @@ namespace citygml
 		_appearance = appearanceManager.getAppearance( id );
 		if ( !_appearance ) _appearance = defAppearance;
 
-		_material = appearanceManager.getMaterial( id );
-		if ( !_material ) _material = dynamic_cast< Material * >( defAppearance );
+		_materials[ FRONT ] = appearanceManager.getMaterialFront( id );
+		_materials[ BACK ] = appearanceManager.getMaterialBack( id );
+ 		if ( !_materials[ FRONT ]  && !_materials[ BACK ])
+ 			_materials[ FRONT ] = dynamic_cast< Material * >( defAppearance );
 
 		_texture = appearanceManager.getTexture( id );
 		if ( !_texture ) _texture = dynamic_cast< Texture * >( defAppearance );

@@ -186,7 +186,8 @@ namespace citygml
 		NODETYPE( specularColor ),
 		NODETYPE( diffuseColor ),
 		NODETYPE( emissiveColor ),
-		NODETYPE( ambientIntensity )
+		NODETYPE( ambientIntensity ),
+		NODETYPE( isFront )
 	};
 	
 	// CityGML SAX parsing handler

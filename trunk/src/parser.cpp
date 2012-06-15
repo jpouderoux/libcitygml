@@ -201,6 +201,7 @@ void CityGMLHandler::initNodes( void )
 	INSERTNODETYPE( diffuseColor );
 	INSERTNODETYPE( emissiveColor );
 	INSERTNODETYPE( ambientIntensity );
+	INSERTNODETYPE( isFront );
 
 	// Set the known namespaces
 
@@ -778,6 +779,15 @@ void CityGMLHandler::endElement( const std::string& name )
 			TexCoords *vec = new TexCoords();
 			parseVecList( buffer, *vec );			
 			_model->_appearanceManager.assignTexCoords( vec );
+		}
+		break;
+
+	case NODETYPE( isFront ):
+		if ( _currentAppearance )  
+		{
+			bool val;
+			parseValue( buffer, val );
+			_currentAppearance->_isFront = val;
 		}
 		break;
 
