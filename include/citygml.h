@@ -289,9 +289,18 @@ namespace citygml
 		~AppearanceManager( void );
 
 		inline Appearance* getAppearance( const std::string& nodeid ) const
+		// Deprecated, use getMaterial and getTexture instead.
 		{
-			std::map<std::string, Appearance*>::const_iterator it = _appearanceMap.find( nodeid );
-			return ( it != _appearanceMap.end() ) ? it->second : 0;
+			return getAppearance< Appearance* >( nodeid );
+		}
+		inline Material* getMaterial( const std::string& nodeid ) const
+		{
+			return getAppearance< Material* >( nodeid );
+		}
+
+		inline Texture* getTexture( const std::string& nodeid ) const
+		{
+			return getAppearance< Texture* >( nodeid );
 		}
 
 		inline bool getTexCoords( const std::string& nodeid, TexCoords &texCoords) const
@@ -308,6 +317,7 @@ namespace citygml
 	protected:
 		void refresh( void );
 
+		template < typename AppType > AppType getAppearance( const std::string& nodeid ) const;
 		void addAppearance( Appearance* );
 		void assignNode( const std::string& nodeid );
 		bool assignTexCoords( TexCoords* );
@@ -320,7 +330,7 @@ namespace citygml
 
 		std::vector< Appearance* > _appearances;
 
-		std::map<std::string, Appearance*> _appearanceMap;
+		std::map< std::string, std::vector< Appearance* > > _appearancesMap;
 
 		std::map<std::string, TexCoords*> _texCoordsMap;
         std::vector<TexCoords*> _obsoleteTexCoords;
@@ -369,7 +379,7 @@ namespace citygml
 		friend class Tesseletor;
 		friend class CityModel;
 	public:
-		Polygon( const std::string& id ) : Object( id ), _appearance( 0 ), _exteriorRing( 0 ), _negNormal( false ), _geometry( 0 ) {}
+		Polygon( const std::string& id ) : Object( id ), _appearance( 0 ), _material( 0 ), _texture( 0 ), _exteriorRing( 0 ), _negNormal( false ), _geometry( 0 ) {}
 
 		LIBCITYGML_EXPORT ~Polygon( void );
 
@@ -386,7 +396,9 @@ namespace citygml
 		inline const TexCoords& getTexCoords( void ) const { return _texCoords; }
 
 		// Get the appearance
-		inline const Appearance* getAppearance( void ) const { return _appearance; }
+		inline const Appearance* getAppearance( void ) const { return _appearance; } // Deprecated! Use getMaterial and getTexture instead
+		inline const Material* getMaterial( void ) const { return _material; }
+		inline const Texture* getTexture( void ) const { return _texture; }
 
 	protected:
 		void finish( AppearanceManager&, bool doTesselate );
@@ -408,6 +420,8 @@ namespace citygml
 		std::vector<unsigned int> _indices;
 
 		Appearance* _appearance;
+		Material* _material;
+		Texture* _texture;
 
 		TexCoords _texCoords; 
 

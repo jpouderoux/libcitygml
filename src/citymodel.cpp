@@ -166,6 +166,20 @@ namespace citygml
 		_lastId = "";
 	}
 
+	template <typename AppType>
+	AppType AppearanceManager::getAppearance( const std::string& nodeid ) const
+	{
+		std::map< std::string, std::vector< Appearance* > >::const_iterator map_iterator = _appearancesMap.find( nodeid );
+		if ( map_iterator == _appearancesMap.end() ) return 0;
+
+		std::vector< Appearance* >::const_iterator vector_iterator = ( map_iterator->second ).begin();
+		for( ; vector_iterator != ( map_iterator->second ).end(); ++vector_iterator ) {
+			if ( AppType appType = dynamic_cast< AppType >( *vector_iterator ) ) return appType;
+		}
+
+		return 0;
+	}
+
 	void AppearanceManager::addAppearance( Appearance* app ) 
 	{ 
 		if ( app ) _appearances.push_back( app ); 
@@ -174,10 +188,15 @@ namespace citygml
 	void AppearanceManager::assignNode( const std::string& nodeid )
 	{ 
 		_lastId = nodeid; 
-		if ( !getAppearance( nodeid ) ) 
+
+		if ( !getAppearance< Appearance * >( nodeid ) )
+			_appearancesMap[ nodeid ] = std::vector< Appearance* >(0);
+
+		Appearance* currentAppearance = _appearances[ _appearances.size() - 1 ];	
+		if ( dynamic_cast< Texture* >( currentAppearance ) && !getAppearance< Texture* >( nodeid ) ||
+			 dynamic_cast< Material* >( currentAppearance ) && !getAppearance< Material* >( nodeid ) )
 		{
-			_appearanceMap[ nodeid ] = _appearances[ _appearances.size() - 1 ]; 
-		
+			(_appearancesMap[ nodeid ]).push_back( currentAppearance );
 			if ( _lastCoords ) { assignTexCoords( _lastCoords ); _lastId = ""; }
 		}
 	}
@@ -213,7 +232,7 @@ namespace citygml
             if ( useLessTexCoords.find( *it ) == useLessTexCoords.end() )
                 delete *it;
 
-		_appearanceMap.clear();
+		_appearancesMap.clear();
         _texCoordsMap.clear();
         _obsoleteTexCoords.clear();
     }
@@ -400,9 +419,15 @@ namespace citygml
 		
 		_texCoords.resize( _vertices.size() );
 		
-		_appearance = appearanceManager.getAppearance( getId() );
-
+		const std::string id = getId();
+		_appearance = appearanceManager.getAppearance( id );
 		if ( !_appearance ) _appearance = defAppearance;
+
+		_material = appearanceManager.getMaterial( id );
+		if ( !_material ) _material = dynamic_cast< Material * >( defAppearance );
+
+		_texture = appearanceManager.getTexture( id );
+		if ( !_texture ) _texture = dynamic_cast< Texture * >( defAppearance );
 	}
 
 	void Polygon::addRing( LinearRing* ring ) 
